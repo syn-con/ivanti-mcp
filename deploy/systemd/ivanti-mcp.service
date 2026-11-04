@@ -11,7 +11,7 @@
 # below), then `sudo systemctl restart ivanti-mcp`. It is read once, at startup.
 #
 # The unit mirrors the container's posture: unprivileged, read-only filesystem,
-# no capabilities, nothing written to disk.
+# no capabilities. The one thing it writes is the licence state, below.
 
 [Unit]
 Description=Ivanti MCP server
@@ -46,6 +46,8 @@ EnvironmentFile=/etc/ivanti-mcp/env
 #Environment=IVANTI_API_KEY_FILE=%d/ivanti-api-key
 #LoadCredential=bearer-token:/etc/ivanti-mcp/bearer-token
 #Environment=BEARER_TOKEN_FILE=%d/bearer-token
+#LoadCredential=licence-key:/etc/ivanti-mcp/licence-key
+#Environment=LICENSE_KEY_FILE=%d/licence-key
 
 ExecStart=/usr/bin/node /opt/ivanti-mcp/dist/index.js
 
@@ -89,8 +91,12 @@ UMask=0077
 # writable and then executable, so it refuses to start under that directive —
 # the failure looks like a segfault rather than a policy denial.
 
-# Nothing is written to disk, so ProtectSystem=strict above needs no exception.
-# Add ReadWritePaths only if you later give it somewhere to write.
+# The last licence the Synergy Hub confirmed, kept so that a restart during a Hub
+# outage keeps what is left of its 30 days. systemd creates /var/lib/ivanti-mcp,
+# owned by the service, and it is the one path ProtectSystem=strict leaves writable.
+StateDirectory=ivanti-mcp
+StateDirectoryMode=0700
+Environment=LICENSE_STATE_DIR=%S/ivanti-mcp
 
 [Install]
 WantedBy=multi-user.target

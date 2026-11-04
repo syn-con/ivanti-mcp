@@ -48,7 +48,7 @@ const OAUTH = { 'server.authMode': 'oauth', 'oauth.issuer': 'https://sso.example
 const LONG_TOKEN = 'x'.repeat(32);
 
 /** The development-secret path, valid as it stands: `secrets.create` with every key it needs. */
-const DEV_SECRET = { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.bearerToken': LONG_TOKEN };
+const DEV_SECRET = { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.bearerToken': LONG_TOKEN, 'secrets.licenceKey': 'l' };
 const METRICS_TOKEN = 'm'.repeat(32);
 
 /**
@@ -87,9 +87,9 @@ const CASES = [
   { name: 'ConfigDB over plain http', set: { 'ivanti.configUrl': 'http://config.example.com' }, refuses: /ivanti\.configUrl must be an https/ },
 
   { name: 'dev secret, no API key', set: { 'secrets.existingSecret': null, 'secrets.create': 'true' }, refuses: /needs secrets\.ivantiApiKey/ },
-  { name: 'dev secret, short bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.bearerToken': 'change-me' },
+  { name: 'dev secret, short bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.licenceKey': 'l', 'secrets.bearerToken': 'change-me' },
     refuses: /at least 32 characters/ },
-  { name: 'dev secret, 32-character bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.bearerToken': LONG_TOKEN },
+  { name: 'dev secret, 32-character bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.licenceKey': 'l', 'secrets.bearerToken': LONG_TOKEN },
     has: ['kind: Secret', 'checksum/config'] },
 
   // authMode=none: nothing may publish it, and a NetworkPolicy fences it by default.
@@ -137,10 +137,10 @@ const CASES = [
   { name: 'maxCallsPerMinute 10000', set: { 'server.maxCallsPerMinute': '10000' }, has: ['MCP_MAX_CALLS_PER_MINUTE, value: "10000"'] },
 
   // The guards the suite once did not exercise.
-  { name: 'configUrl without the ConfigDB key', set: { 'ivanti.configUrl': 'https://config.example.com', 'secrets.existingSecret': null, ...{ 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.bearerToken': LONG_TOKEN } },
+  { name: 'configUrl without the ConfigDB key', set: { 'ivanti.configUrl': 'https://config.example.com', 'secrets.existingSecret': null, ...{ 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.licenceKey': 'l', 'secrets.bearerToken': LONG_TOKEN } },
     refuses: /ivanti\.configUrl needs the ConfigDB key/ },
   { name: 'configUrl with the ConfigDB key', set: { 'ivanti.configUrl': 'https://config.example.com', ...DEV_SECRET, 'secrets.centralConfigApiKey': 'c' }, has: ['IVANTI_CENTRAL_CONFIG_API_KEY_FILE'] },
-  { name: 'bearer without a bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k' }, refuses: /authMode=bearer needs a bearer token/ },
+  { name: 'bearer without a bearer token', set: { 'secrets.existingSecret': null, 'secrets.create': 'true', 'secrets.ivantiApiKey': 'k', 'secrets.licenceKey': 'l' }, refuses: /authMode=bearer needs a bearer token/ },
   { name: 'dev secret, metrics token is the Ivanti API key', set: { ...DEV_SECRET, 'secrets.ivantiApiKey': METRICS_TOKEN, 'metrics.enabled': 'true', 'metrics.token': 'true', 'secrets.metricsToken': METRICS_TOKEN },
     refuses: /metricsToken is the same as secrets\.ivantiApiKey/ },
   { name: 'dev secret, metrics token is the ConfigDB key', set: { ...DEV_SECRET, 'secrets.centralConfigApiKey': METRICS_TOKEN, 'metrics.enabled': 'true', 'metrics.token': 'true', 'secrets.metricsToken': METRICS_TOKEN },
@@ -190,6 +190,23 @@ const CASES = [
   { name: 'NetworkPolicy peers do not reach metrics', set: { 'networkPolicy.enabled': 'true', 'networkPolicy.from[0].namespaceSelector.matchLabels.team': 'agents',
     'metrics.enabled': 'true' },
   has: ['team: agents\n      ports:\n        - { protocol: TCP, port: 3000 }', '- podSelector: {}\n      ports:\n        - { protocol: TCP, port: 9464 }'] },
+  // Licensing (design §9f).
+  { name: 'licence key and install ID always wired', has: ['LICENSE_KEY_FILE', 'LICENSE_INSTALL_ID'], lacks: ['LICENSE_HUB_URL'] },
+  { name: 'dev secret carries the licence key', set: DEV_SECRET, has: ['licence-key: "l"'] },
+  { name: 'dev secret without a licence key', set: { ...DEV_SECRET, 'secrets.licenceKey': null },
+    refuses: /secrets\.create=true needs secrets\.licenceKey/ },
+  { name: 'a given install ID is used as it is', set: { 'license.installId': '3f6b2a9e-1c4d-4e8a-9b7f-2d5e8c1a6f03' },
+    has: ['value: "3f6b2a9e-1c4d-4e8a-9b7f-2d5e8c1a6f03"'] },
+  { name: 'an install ID that is not a UUID', set: { 'license.installId': 'my-server' }, refuses: /license\.installId must be a UUID/ },
+  { name: 'the licence token is kept in its own Secret, reachable by that Secret only', has: [
+    'name: LICENSE_STATE_SECRET, value: "ivanti-mcp-licence-state"', 'automountServiceAccountToken: true', 'kind: Role',
+    'resourceNames: [ivanti-mcp-licence-state]', 'verbs: [get, update]', 'kind: RoleBinding', 'namespace: ivanti'] },
+  { name: 'keepState=false: no Secret, no Role, no token', set: { 'license.keepState': 'false' },
+    has: ['automountServiceAccountToken: false'], lacks: ['LICENSE_STATE_SECRET', 'kind: Role', 'licence-state'] },
+  { name: 'a long release name keeps the licence-state suffix', set: { fullnameOverride: 'x'.repeat(70) },
+    has: [`name: ${'x'.repeat(49)}-licence-state`] },
+  { name: 'a Hub address over https', set: { 'license.hubUrl': 'https://hub.example.com' }, has: ['LICENSE_HUB_URL'] },
+  { name: 'a Hub address over plain http', set: { 'license.hubUrl': 'http://hub.example.com' }, refuses: /license\.hubUrl must be https/ },
 ];
 
 function args(set = {}, setRaw = {}) {
@@ -270,7 +287,13 @@ for (const c of CASES) {
 
 // Every setting the server reads is a value of the chart, or is named here as deliberately not.
 // `_FILE` secrets count under their own name: the chart mounts them, it never sets the plain key.
-const NOT_A_VALUE = {};
+const NOT_A_VALUE = {
+  // The chart keeps the last verified licence token in a Secret, never a folder.
+  LICENSE_STATE_DIR: 'The chart keeps the licence token in a Secret (LICENSE_STATE_SECRET), not a folder.',
+  // Binding to the namespace UID needs a cluster-scoped lookup that namespace-scoped installers
+  // are not allowed; derived from the install ID instead until that is a deliberate opt-in.
+  LICENSE_MACHINE_ID: 'Derived from LICENSE_INSTALL_ID under the chart; see design §9f.',
+};
 const deploymentSource = readFileSync(`${CHART}/templates/deployment.yaml`, 'utf8');
 for (const key of Object.keys(envSchema.shape)) {
   if (key in NOT_A_VALUE) continue;

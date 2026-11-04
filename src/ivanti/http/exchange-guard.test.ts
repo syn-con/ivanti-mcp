@@ -3,6 +3,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -11,14 +12,16 @@ import { describe, expect, it } from 'vitest';
  * about it fails: it works, and leaks a credential into a log line or hangs on a dead socket.
  *
  * So no file outside `exchange.ts` may call `fetch` or a `fetchImpl`. The exceptions are the
- * OAuth discovery calls, which talk to the identity provider and never to Ivanti.
+ * OAuth discovery calls, which talk to the identity provider, and the licence client, which talks
+ * to the Synergy Hub — neither ever reaches Ivanti.
  */
 const NOT_IVANTI: Record<string, string> = {
   'auth/oauth/discover-metadata.ts': 'Fetches the identity provider discovery document.',
   'auth/oauth/create-verifier.ts': 'Fetches the identity provider JWKS.',
+  'licensing/hub-client.ts': 'Talks to the Synergy Hub (activate, heartbeat, its public keys), never Ivanti.',
 };
 
-const SRC_DIR = new URL('../..', import.meta.url).pathname;
+const SRC_DIR = fileURLToPath(new URL('../..', import.meta.url));
 
 function sourceFiles(dir: string, prefix = ''): { name: string; body: string }[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

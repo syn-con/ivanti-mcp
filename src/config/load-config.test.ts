@@ -2,7 +2,17 @@
 // Copyright (c) 2026 SYNERGY. All rights reserved.
 
 import { describe, expect, it, vi } from 'vitest';
-import { ConfigError, loadConfig } from './load-config.js';
+import type { EnvRecord, FileReader } from './read-secret-file.js';
+import { ConfigError, loadConfig as loadConfigAsGiven } from './load-config.js';
+
+/** A licence key and install ID every test may assume, so each one is about its own setting. */
+const LICENSED: EnvRecord = {
+  LICENSE_KEY: 'test-licence-key',
+  LICENSE_INSTALL_ID: '00000000-0000-4000-8000-000000000001',
+};
+
+const loadConfig = (env: EnvRecord, readFile?: FileReader) =>
+  loadConfigAsGiven({ ...LICENSED, ...env }, readFile);
 
 /** Long enough to be accepted: a bearer token is refused under 32 characters. */
 const FILE_TOKEN = 'token-from-file-long-enough-to-be-accepted';
@@ -279,5 +289,34 @@ describe('loadConfig', () => {
     it('refuses a value that is not a whole number of milliseconds', () => {
       expect(() => loadConfig({ IVANTI_TIMEOUT_MS: '10s' })).toThrow(ConfigError);
     });
+  });
+});
+
+describe('loadConfig: licence settings', () => {
+  it('refuses a configuration with no licence key', () => {
+    expect(() => loadConfigAsGiven({})).toThrow(/LICENSE_KEY \(or LICENSE_KEY_FILE\) is required/);
+  });
+
+  it('reads the licence key and the install ID from files', () => {
+    const files: Record<string, string> = {
+      '/run/secrets/licence-key': 'key-from-file\n',
+      '/run/secrets/install-id': '00000000-0000-4000-8000-000000000002\n',
+    };
+    const config = loadConfigAsGiven(
+      { LICENSE_KEY_FILE: '/run/secrets/licence-key', LICENSE_INSTALL_ID_FILE: '/run/secrets/install-id' },
+      (path) => files[path] ?? '',
+    );
+
+    expect(config.LICENSE_KEY).toBe('key-from-file');
+    expect(config.LICENSE_INSTALL_ID).toBe('00000000-0000-4000-8000-000000000002');
+  });
+
+  it('refuses an install or machine ID that is not a UUID', () => {
+    expect(() => loadConfig({ LICENSE_INSTALL_ID: 'my-server' })).toThrow(/LICENSE_INSTALL_ID/);
+    expect(() => loadConfig({ LICENSE_MACHINE_ID: 'node-1' })).toThrow(/LICENSE_MACHINE_ID/);
+  });
+
+  it('treats an empty Hub address as unset, leaving the built-in one', () => {
+    expect(loadConfig({ LICENSE_HUB_URL: '' }).LICENSE_HUB_URL).toBeUndefined();
   });
 });

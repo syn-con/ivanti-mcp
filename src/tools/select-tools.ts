@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-SYNERGY-Commercial
 // Copyright (c) 2026 SYNERGY. All rights reserved.
 
+import type { LicenceCheck } from './call/licence-gate.js';
 import type { Config } from '../config/env-schema.js';
 import type { IvantiConnection } from '../ivanti/connect.js';
 import type { Logger } from '../logger.js';
@@ -56,6 +57,8 @@ export interface ToolContext {
   logger: Logger;
   /** Absent when no tenant is configured: the Ivanti tools then do not exist at all. */
   ivanti?: IvantiConnection;
+  /** The licence check, which `get_version` reports (design §9f). */
+  licence?: LicenceCheck;
 }
 
 /**

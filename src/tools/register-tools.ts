@@ -12,6 +12,7 @@ import type { CallContext, ToolDefinition } from './tool-definition.js';
 import { auditTargets, createCallLog, targetArguments } from './call/call-log.js';
 import { createConversation } from './call/conversation.js';
 import { createIdentityGate, requiresIdentity } from './call/identity-gate.js';
+import { createLicenceGate, type LicenceCheck } from './call/licence-gate.js';
 import { createRateLimiter } from './call/rate-limit.js';
 import { createSessionKeeper } from './call/session-keeper.js';
 
@@ -82,10 +83,13 @@ export function registerTools(
   manifest?: ManifestFingerprint,
   /** `MCP_MAX_CALLS_PER_MINUTE`; omitted, nothing is limited — the shape every test wants. */
   maxCallsPerMinute?: number,
+  /** The licence check (design §9f); omitted, every call is licensed — the shape every test wants. */
+  licence?: LicenceCheck,
 ): RegisteredTools {
   const conversation = createConversation(context, logger, requiresIdentity(tools), idleMs);
   const limiter = createRateLimiter(maxCallsPerMinute);
   const gate = createIdentityGate(tools, conversation, logger);
+  const licensed = createLicenceGate(licence, logger);
   const keepSession = createSessionKeeper(conversation, logger);
   const callLog = createCallLog(server, conversation, logger, manifest);
 
@@ -130,6 +134,10 @@ export function registerTools(
       ...auditFields(conversation.pin().identity()),
       ...auditTargets(targets, args),
     });
+
+    // The licence first: unlicensed, nothing reaches Ivanti on anyone's behalf (see `licence-gate.ts`).
+    const unlicensed = licensed.admit(tool);
+    if (unlicensed !== undefined) return unlicensed;
 
     // The gate, here, at the one place every call passes through (see `identity-gate.ts`).
     const pending = gate.admit(tool);

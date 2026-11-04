@@ -16,6 +16,7 @@ result works is in [`architecture.md`](./architecture.md); traps in [`notes.md`]
 | 5 | Identity | `act_as` once per conversation, gating every other tool; a token's claim replaces the question under `oauth` |
 | 6 | Permissions | No role system in the server — tool annotations and the client's harness; Ivanti's own roles apply under impersonation |
 | 7 | Metrics | Prometheus on a listener of its own, off by default (`METRICS_ON`), loopback by default, with an optional scrape-only token — never on the MCP port (§9e) |
+| 8 | Licensing | Activated against the Synergy Hub at startup and renewed by heartbeat; an unlicensed server starts but refuses every tool but `get_version`; 30 days' grace offline, across restarts (§9f) |
 
 ## 1. Authentication modes
 
@@ -309,6 +310,53 @@ auth mode. Token propagation to Ivanti is settled by §11.
   another notice and another thing for a scanner to flag. Instruments are recorded whether or not
   metrics are on; `METRICS_ON` decides only whether anything can read them.
 
+## 9f. Licensing through the Synergy Hub (decided 2026-11-04)
+
+The product is licensed by the Synergy Hub (`Synergy.Hub`, Context B: on-premise products) under
+the product key `ivanti-mcp-standalone`. Only two of the Hub's operations are used — activate and
+heartbeat — plus its public keys to check what they return. One licence gives full access: no
+feature is gated, usage is not reported, and the update feed is not read.
+
+- **The Hub is told a machine, not shown one.** A "machine" is three strings the client sends —
+  `machineGuid`, `biosUuid`, `installGuid` — compared as a hash and never checked against
+  hardware. A container has no stable hardware identity, so the server is given or derives the
+  three: `installGuid` is fixed per installation (the chart derives it from the namespace and
+  release name; the operator sets it under Docker; stdio generates it into the config folder),
+  `machineGuid` is `LICENSE_MACHINE_ID` when set and otherwise derived from `installGuid`, and
+  `biosUuid` is derived from `machineGuid`. The chart *derives* rather than generates: Helm's
+  `lookup` answers nothing under `helm template` and Argo CD, so a random value kept in a Secret
+  would be a new one — and a new seat — on every such render. For the same reason the chart does
+  not yet pass the namespace UID: reading it is a cluster-scoped lookup a namespace-scoped
+  installer may not make. Every process of one installation sends identical
+  values on every call — the Hub moves a seat when `machineGuid` or `installGuid` changes, so two
+  pods sending different values would bounce it between them on every heartbeat.
+- **Activate on every start, keep nothing about the activation.** Activate is idempotent per
+  fingerprint: the same three values get the same activation and seat back. Restarts, upgrades and
+  a rollout's overlapping pods hold one seat. Each release takes its own seat (revisit when the
+  licence model says otherwise).
+- **Heartbeat every 4 minutes.** The token expires 5 minutes after issue (`exp`); the licence's
+  real end is `validUntil`. A token is trusted only once its ES256 signature checks against the
+  Hub's published keys and its `aud` contains `ivanti-mcp-standalone`.
+- **Unlicensed means tools refused, never a refusal to start.** One licence check in
+  `registerTools`, ahead of the identity gate, refuses every tool but `get_version` — `act_as`
+  included, so nothing reaches Ivanti on anyone's behalf — and every refusal carries the reason.
+  `get_version` reports the licence, but where a tenant is configured the identity gate still holds
+  it until `act_as`, so the refusal text, not `get_version`, is what a model can always read. Health
+  and readiness do not depend on it: a pod restarted for being unlicensed would come back
+  unlicensed. Refusing to start would make a Hub outage a crash loop.
+- **30 days' grace without the Hub, across restarts.** The Hub enforces no grace period itself;
+  this is the product's choice, as in SDAP. The last verified token and the keys that verified it
+  are stored — in a Secret under the chart, a file under Docker and stdio — and a restart while
+  the Hub is unreachable reopens from it. The grace clock is the token's own signed `iat`, so
+  editing the store cannot extend it, and the request nonce (echoed inside the signed token)
+  carries a hash of `installGuid`, so a token copied from another installation is refused. Any
+  refusal from the Hub clears the store.
+- **The Hub's address is built in** (`https://hub.itsmcloud.lt`) and may be overridden with
+  `LICENSE_HUB_URL`; an empty or plain-`http` value is refused rather than read as "licensing
+  off" — the mistake SDAP's first client made.
+- **No offline activation.** Outbound HTTPS to the Hub is a requirement; air-gapped deployments are
+  not supported.
+
 ## 10. Rejected alternatives
 
 | Rejected | Why |
@@ -340,6 +388,11 @@ auth mode. Token propagation to Ivanti is settled by §11.
 | Pretty-printed JSON results | A third of every result was indentation, re-sent with every later request, and the reader is a model |
 | A release that checks and publishes in one job | The design until 2026-09-29, chosen to build `dist/` once. **Reversed:** `id-token: write` reaches every step of its job, and the checks run every devDependency, so any package in the tree could have signed as the release or pushed a tag. A read-only *Gate* and a *Publish* that installs no npm package, for a second checkout and one artifact hop — [`deployment.md`](./deployment.md#releasing) |
 | Metrics on the MCP port, behind its auth | Every credential that guards the MCP port reaches the tools: under `none` nothing guards it, under `bearer` the scraper holds the token that calls `delete_record`, under `oauth` it needs a signed-in identity from the IdP. And the ingress or proxy in front of the MCP port would route to metrics too. A port of its own (§9e) |
+| Refusing to start without a licence | A Hub outage would become a crash loop, and the operator could not ask the server why. Tools are refused instead, each refusal saying why (§9f) |
+| Real hardware identifiers for the licence fingerprint | A pod has none that survive a restart, and the image's `/etc/machine-id` is the same for every customer. Generated and derived values, fixed per installation (§9f) |
+| A ReadWriteOnce volume for the stored licence token | Stalls the rolling update when the new pod lands on another node. A Secret survives restarts and node moves (§9f) |
+| An `emptyDir` for the stored licence token | Lost when the pod moves node, which is when a restart is most likely |
+| Gating features from the licence token | One licence gives full access (decided 2026-11-04); the token's `features` claim is not read |
 | Scaling out by hashing `Mcp-Session-Id` at the ingress | Offered by the chart as `sessionAffinity` until 2026-09-29, and never able to work: the pod answering `initialize` mints the id, so the request that opens a session carries nothing to route by. The chart refuses it and more than one replica; scaling out needs a shared session store |
 
 ### Introspection — deferred

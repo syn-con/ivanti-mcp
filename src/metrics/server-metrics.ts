@@ -97,6 +97,8 @@ export interface ServerState {
   limiter?: { readonly inFlight: number; readonly waiting: number };
   /** Absent without the HTTP transport. */
   sessions?: () => number;
+  /** The licence check: open, grace or closed (design §9f). */
+  licence?: () => { status: string; confirmedAt?: number };
 }
 
 /** Wires the gauges. Called once at startup, and only when `METRICS_ON` is set. */
@@ -119,6 +121,22 @@ export function watchServer(state: ServerState, target: Registry = registry): vo
     () => limiter?.waiting,
   );
   target.gauge('ivanti_mcp_sessions', 'HTTP sessions held now.', () => state.sessions?.());
+  target.gauge(
+    'ivanti_mcp_licence_state',
+    '1 for the current state of the licence check: open, grace (the Hub unreachable, under 30 days) or closed (tools refused).',
+    () => {
+      const status = state.licence?.().status;
+      return status === undefined ? undefined : ['open', 'grace', 'closed'].map((s) => [{ state: s }, s === status ? 1 : 0] as const);
+    },
+  );
+  target.gauge(
+    'ivanti_mcp_licence_confirmed_timestamp_seconds',
+    'When the Synergy Hub last confirmed the licence, in seconds since the Unix epoch.',
+    () => {
+      const at = state.licence?.().confirmedAt;
+      return at === undefined ? undefined : at / 1000;
+    },
+  );
   target.gauge('process_resident_memory_bytes', 'Resident memory size in bytes.', () => process.memoryUsage.rss());
   target.gauge('nodejs_heap_used_bytes', 'V8 heap in use, in bytes.', () => process.memoryUsage().heapUsed);
   target.gauge(

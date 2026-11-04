@@ -3,6 +3,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -35,7 +36,7 @@ const SERVICE_ACCOUNT_BY_DESIGN: Record<string, string> = {
     'conversation.',
 };
 
-const TOOLS_DIR = new URL('..', import.meta.url).pathname;
+const TOOLS_DIR = fileURLToPath(new URL('..', import.meta.url));
 
 function sourceFiles(dir: string, prefix = ''): { name: string; body: string }[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

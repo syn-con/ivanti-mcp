@@ -15,6 +15,7 @@ const ELSEWHERE: Record<string, string> = {
   TenantRefusedError: 'startup probe, before any tool runs',
   AttachmentLinkUnconfirmedError: 'caught in upload_attachment, which answers it',
   RoleNotAppliedError: 'caught in switch_role, which answers it',
+  HubError: 'licensing runs beside the tools, never inside one; the licence check answers instead',
 };
 
 const sources = (dir: string): string[] =>

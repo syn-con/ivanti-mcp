@@ -34,6 +34,10 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 RUN pnpm build
+# An empty folder for the licence state, copied below with the runtime user as owner. A
+# named volume mounted there takes that ownership on first use; without one the root
+# filesystem is read-only and nothing is kept (docs/deployment.md, "Licensing").
+RUN mkdir /licence-state
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Production dependencies, laid out flat.
@@ -91,6 +95,7 @@ COPY package.json ./
 # they travel inside the image rather than only in the repository.
 COPY LICENSE THIRD-PARTY-NOTICES.md ./
 COPY docker/healthcheck.mjs ./docker/healthcheck.mjs
+COPY --from=build --chown=65532:65532 /licence-state /var/lib/ivanti-mcp
 
 # No EXPOSE: the ports are MCP_PORT and METRICS_PORT, which have no built-in value, and an
 # EXPOSE would name one the server is not listening on. EXPOSE publishes nothing anyway.

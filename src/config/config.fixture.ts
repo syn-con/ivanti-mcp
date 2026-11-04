@@ -49,5 +49,11 @@ export const configFixture = (overrides: Partial<Config> = {}): Config => ({
   METRICS_BIND: '127.0.0.1',
   METRICS_PORT: 9464,
   METRICS_TOKEN: undefined,
+  LICENSE_KEY: 'test-licence-key',
+  LICENSE_INSTALL_ID: '00000000-0000-4000-8000-000000000001',
+  LICENSE_MACHINE_ID: undefined,
+  LICENSE_STATE_DIR: undefined,
+  LICENSE_STATE_SECRET: undefined,
+  LICENSE_HUB_URL: undefined,
   ...overrides,
 });

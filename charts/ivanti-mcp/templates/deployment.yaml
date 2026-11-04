@@ -24,6 +24,9 @@ spec:
         {{- with .Values.podLabels }}{{- toYaml . | nindent 8 }}{{- end }}
     spec:
       serviceAccountName: {{ include "ivanti-mcp.serviceAccountName" . }}
+      # Mounted only to keep the licence token in its Secret, which is all the
+      # account's Role allows (templates/licence-state.yaml).
+      automountServiceAccountToken: {{ .Values.license.keepState }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -146,6 +149,16 @@ spec:
             {{- if .Values.metrics.token }}
             - { name: METRICS_TOKEN_FILE, value: "{{ .Values.secrets.mountPath }}/metrics-token" }
             {{- end }}
+            {{- end }}
+            # Licensing (design §9f). The key is a file like the others; the install ID is
+            # not a secret, and the same on every render (see ivanti-mcp.installId).
+            - { name: LICENSE_KEY_FILE,   value: "{{ .Values.secrets.mountPath }}/licence-key" }
+            - { name: LICENSE_INSTALL_ID, value: {{ include "ivanti-mcp.installId" . | quote }} }
+            {{- with .Values.license.hubUrl }}
+            - { name: LICENSE_HUB_URL,    value: {{ . | quote }} }
+            {{- end }}
+            {{- if .Values.license.keepState }}
+            - { name: LICENSE_STATE_SECRET, value: {{ include "ivanti-mcp.licenceStateName" . | quote }} }
             {{- end }}
             {{- with .Values.extraEnv }}{{- toYaml . | nindent 12 }}{{- end }}
           volumeMounts:

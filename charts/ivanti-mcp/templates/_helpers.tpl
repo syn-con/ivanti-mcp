@@ -55,6 +55,30 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: metrics
 {{- end -}}
 
+{{/*
+  This installation's identity to the Synergy Hub (design §9f): license.installId when given,
+  otherwise a UUID derived from the namespace and release name. Derived, never generated: Helm's
+  `lookup` answers nothing under `helm template` and Argo CD, so a random value kept in a Secret
+  would be a new one on every such render, and a new licence seat with it. The version and
+  variant digits are forced so the server's UUID check accepts it.
+*/}}
+{{- define "ivanti-mcp.installId" -}}
+{{- if .Values.license.installId -}}
+{{- .Values.license.installId -}}
+{{- else -}}
+{{- $h := sha256sum (printf "ivanti-mcp-standalone/%s/%s" .Release.Namespace .Release.Name) -}}
+{{- printf "%s-%s-4%s-8%s-%s" (substr 0 8 $h) (substr 8 12 $h) (substr 13 16 $h) (substr 17 20 $h) (substr 20 32 $h) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  The Secret that keeps the last licence token, and its Role and RoleBinding. Cut to 49 so the
+  suffix always survives, as for the metrics Service.
+*/}}
+{{- define "ivanti-mcp.licenceStateName" -}}
+{{- printf "%s-licence-state" (include "ivanti-mcp.fullname" . | trunc 49 | trimSuffix "-") -}}
+{{- end -}}
+
 {{- define "ivanti-mcp.secretName" -}}
 {{- if .Values.secrets.existingSecret -}}
 {{- .Values.secrets.existingSecret -}}
@@ -143,6 +167,19 @@ app.kubernetes.io/component: metrics
 {{- end -}}
 {{- if and .Values.secrets.create (not .Values.secrets.ivantiApiKey) -}}
 {{- fail "secrets.create=true needs secrets.ivantiApiKey." -}}
+{{- end -}}
+{{- if and .Values.secrets.create (not .Values.secrets.licenceKey) -}}
+{{- fail "secrets.create=true needs secrets.licenceKey: the Synergy Hub licence key. (With secrets.existingSecret, the Secret needs the key licence-key.)" -}}
+{{- end -}}
+{{- with .Values.license.installId -}}
+{{- if not (regexMatch "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" (toString .)) -}}
+{{- fail (printf "license.installId must be a UUID (got %q). Generate one: node -e \"console.log(crypto.randomUUID())\"" (toString .)) -}}
+{{- end -}}
+{{- end -}}
+{{- with .Values.license.hubUrl -}}
+{{- if not (hasPrefix "https://" (toString .)) -}}
+{{- fail (printf "license.hubUrl must be https (got %q): the licence key travels with every heartbeat. The server refuses the same." (toString .)) -}}
+{{- end -}}
 {{- end -}}
 {{- if not (has .Values.server.authMode (list "none" "bearer" "oauth")) -}}
 {{- fail (printf "server.authMode must be none, bearer or oauth (got %q)." (toString .Values.server.authMode)) -}}

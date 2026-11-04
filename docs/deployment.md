@@ -123,6 +123,7 @@ error restart-loops with back-off — `restart: unless-stopped` cannot spare exi
 docker run -d --name ivanti-mcp --restart unless-stopped \
   --env-file .env -e MCP_BIND=0.0.0.0 -p 127.0.0.1:3000:3000 \
   -v "$PWD/secrets:/run/secrets:ro" \
+  -v ivanti-mcp-licence:/var/lib/ivanti-mcp -e LICENSE_STATE_DIR=/var/lib/ivanti-mcp \
   --read-only --cap-drop ALL --security-opt no-new-privileges \
   tyrunas/ivanti-mcp:$VERSION
 ```
@@ -173,7 +174,7 @@ nobody reviewed.
 Tags: `1.2.3`, `1.2`, `1` and `latest` for a release; a prerelease publishes its exact version only.
 CI builds every commit for both architectures and pushes nothing. Pin a digest in production.
 
-Three things that bite, all recorded in `notes.md`:
+Four things that bite, all recorded in `notes.md`:
 
 - **`MCP_BIND=0.0.0.0` inside a container** — its loopback is its own. Exposure is then the `-p`
   address, above.
@@ -181,6 +182,8 @@ Three things that bite, all recorded in `notes.md`:
   own is unreadable inside, and the exit-78 `EACCES` reads like a missing file.
 - **The tenant hostname must resolve inside the container** — split-horizon DNS has handed one a LAN
   address it could not route to. Pin it with `--add-host`.
+- **Mount the `licence-state` volume**, which compose does, or every `docker run -i` is a new
+  machine to the Synergy Hub — see [Licensing](#licensing).
 
 ### How the image is built
 
@@ -246,6 +249,8 @@ the failure to `helm install`:
 | `metrics.port` equal to `server.port` | whatever fronts the MCP port must never reach the metrics |
 | `metrics.token` with `secrets.create` and a `secrets.metricsToken` that is empty, under 32 characters, or equal to another chart secret | the server refuses it — whatever scrapes holds it |
 | `metrics.serviceMonitor.enabled` while `metrics.enabled` is false | it would scrape a port nothing serves |
+| `secrets.create` without `secrets.licenceKey` | the server cannot start without a licence key |
+| `license.installId` that is not a UUID, or `license.hubUrl` that is not https | the server refuses both; the licence key travels with every heartbeat |
 
 `node scripts/check-chart.mjs` lints the chart and renders the defaults and every guard — a refusal
 that renders fails it, and so does a valid configuration that does not. It is in the shared check
@@ -264,7 +269,7 @@ list, so CI and the release gate both run it.
   kubelet's probes are not subject to it, and it is inert on a CNI that does not enforce policy
   (k3s, Calico and Cilium do; flannel alone does not). `true` turns it on under any mode — with an
   ingress, add the controller's namespace to `from`.
-- **Secrets:** `secrets.existingSecret` with keys `ivanti-api-key`, `bearer-token` for bearer auth,
+- **Secrets:** `secrets.existingSecret` with keys `ivanti-api-key`, `licence-key` (always), `bearer-token` for bearer auth,
   and `metrics-token` with `metrics.token: true` — every key is mounted, at `/run/secrets` (`0400`) with `fsGroup: 65532` so the image's user can
   read them. `secrets.create=true` is for development — it puts the values in Helm history. They
   are read once, at startup: see *Rotating a key*. The chart can measure only
@@ -304,7 +309,8 @@ the settings, then installs and starts the service.
 | `C:\ProgramData\ivanti-mcp` | `env`, `secrets\`, `logs\` — Administrators, SYSTEM and the service only |
 
 The service runs `node --env-file="%ProgramData%\ivanti-mcp\env" "%ProgramFiles%\ivanti-mcp\dist\index.js"`
-as **LocalService**, so it reads its settings and writes nothing but its logs.
+as **LocalService**, so it reads its settings and writes nothing but its logs and its licence state
+([Licensing](#licensing)).
 
 Tested on Windows Server 2025 with Node 24.4 and WinSW 2.12.0 (2026-09-30): the generated script
 on a clean machine under Windows PowerShell 5.1; start as LocalService; a CRLF `env` file and
@@ -323,6 +329,68 @@ server logs as a clean `SIGINT` shutdown; and a restart about 10 s after the pro
   another machine, `METRICS_BIND=0.0.0.0`, a token in `secrets\metrics-token` (the generated script
   writes one), and a Windows Firewall rule naming that Prometheus:
   `New-NetFirewallRule -DisplayName 'Ivanti MCP metrics' -Direction Inbound -Protocol TCP -LocalPort 9464 -RemoteAddress <prometheus> -Action Allow`.
+
+## Licensing
+
+Every deployment needs a **Synergy Hub licence key** (`LICENSE_KEY`, or `LICENSE_KEY_FILE`), and
+**outbound HTTPS to the Hub**, `https://hub.itsmcloud.lt` unless `LICENSE_HUB_URL` says otherwise.
+There is no offline activation. Without a key the server exits 78. With one, it starts, activates
+in the background, and confirms the licence every 4 minutes. The design is in
+[§9f](./initial-design.md#9f-licensing-through-the-synergy-hub-decided-2026-11-04).
+
+**When the licence is not confirmed, the server stays up and refuses every tool**, and each refusal
+says why. It answers again as soon as the Hub confirms the licence, with no restart. While the Hub
+cannot be reached, the server keeps working on the last licence the Hub confirmed, for up to 30 days
+from when the Hub signed it. A refusal from the Hub (a revoked key, an ended entitlement, no free
+seat) closes it at once, whatever is left of the 30 days. `get_version` reports the licence state,
+and the log has one line each time it changes:
+
+| Log line | Means |
+|---|---|
+| `licence: confirmed by the Synergy Hub` (info) | licensed |
+| `licence: the Synergy Hub cannot be reached; running on grace` (warn) | still working; `graceEndsAt` says until when |
+| `licence: running on the stored licence until the Synergy Hub answers` (info) | restarted during an outage, and reopened from the kept licence |
+| `licence: not licensed — tools are refused until the Synergy Hub confirms it` (error) | `reason` says why: the Hub's refusal, or that it has not answered and nothing usable was kept |
+
+**Two settings decide what the Hub sees, and both must stay the same for the life of the
+installation:**
+
+- **`LICENSE_INSTALL_ID`**, a UUID, is the installation's identity. **A new one is a new machine
+  to the Hub and takes another seat.** It is required over HTTP. Generate it once with
+  `node -e "console.log(crypto.randomUUID())"` and keep it with the other settings. Under stdio it
+  is generated once, into `LICENSE_STATE_DIR` when that is set, otherwise into the user's config
+  folder (`%APPDATA%\ivanti-mcp` on Windows, `~/.config/ivanti-mcp` elsewhere).
+- **Where the last confirmed licence is kept**, so a restart during a Hub outage keeps what is left
+  of the 30 days. Without it, the 30 days last only while the process runs, and a restart during an
+  outage starts unlicensed.
+
+| Shape | Install ID | Kept licence |
+|---|---|---|
+| Linux host | in `/etc/ivanti-mcp/env` | the unit's `StateDirectory`, `/var/lib/ivanti-mcp` |
+| Windows host | in `C:\ProgramData\ivanti-mcp\env` | `C:\ProgramData\ivanti-mcp\state`, the one folder besides `logs` the service may write |
+| Container | in `.env` | the `licence-state` volume, mounted at `/var/lib/ivanti-mcp` with `LICENSE_STATE_DIR` pointing at it |
+| Kubernetes | derived by the chart (below) | the `<release>-licence-state` Secret |
+
+**Under `docker run -i` (stdio), mount the volume**, `-v ivanti-mcp-licence:/var/lib/ivanti-mcp`,
+or set `LICENSE_INSTALL_ID`. A container started fresh each time otherwise has nowhere to keep its
+install ID: with a read-only root it refuses to start and says so, and with a writable one every
+run would take a new seat. The image owns `/var/lib/ivanti-mcp` as uid 65532, and a named volume
+takes that ownership the first time it is mounted. A bind mount keeps the host folder's ownership,
+like the secrets do: `chown 65532:65532` it.
+
+**Under Kubernetes the chart handles both.** The install ID is derived from the namespace and the
+release name, so it is the same on every `helm upgrade`, Argo CD sync and `helm template`. Set
+`license.installId` to keep the seat when moving a release to another name or namespace. The kept
+licence goes in a Secret of its own, `<release>-licence-state`, which the chart creates empty. A
+Role lets the pod's service account `get` and `update` **that one Secret and nothing else**, and the
+pod mounts its service-account token for that alone (`automountServiceAccountToken: true` on the
+pod; the account itself keeps it off). `license.keepState: false` drops the Secret, the Role and the
+token, and with them the offline restart. The chart never writes the Secret's data, so an upgrade or
+a sync leaves what the server wrote alone. The kept token is signed by the Hub and bound to this
+installation, so a copy is no use to another one.
+
+**Upgrading from 0.3.x:** add the key `licence-key` to the existing Secret before upgrading.
+Without it the pod cannot read `LICENSE_KEY_FILE` and exits 78.
 
 ## Rotating a key
 
