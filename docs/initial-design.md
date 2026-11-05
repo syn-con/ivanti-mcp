@@ -1,4 +1,4 @@
-# Ivanti MCP (standalone) — Design
+# Ivanti MCP — Design
 
 **Status:** implemented, 0.2.3 · **Updated:** 2026-10-01 · Written 2026-09-10, before any code.
 

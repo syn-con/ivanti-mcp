@@ -79,7 +79,7 @@ ENV NODE_ENV=production
 LABEL org.opencontainers.image.title="SYNERGY Ivanti MCP" \
       org.opencontainers.image.vendor="SYNERGY" \
       org.opencontainers.image.url="https://www.synergy.eu" \
-      org.opencontainers.image.source="https://github.com/tyrunasj/ivanti-mcp-standalone" \
+      org.opencontainers.image.source="https://github.com/syn-con/ivanti-mcp" \
       org.opencontainers.image.licenses="LicenseRef-SYNERGY-Commercial"
 
 COPY --from=deps  /app/node_modules ./node_modules

@@ -122,7 +122,7 @@ export function createMcpHandler<S extends McpSession>(deps: McpHandlerDeps<S>):
     request: IncomingMessage,
     response: ServerResponse,
     body?: unknown,
-    /** A GET holds the standalone stream: the client is attached, nothing is running. */
+    /** A GET holds the dedicated SSE stream: the client is attached, nothing is running. */
     stream = false,
   ): Promise<void> => {
     const done = stream ? sessions.attach(sessionId) : sessions.busy(sessionId);
@@ -170,7 +170,7 @@ export function createMcpHandler<S extends McpSession>(deps: McpHandlerDeps<S>):
       // The same gate as POST, and it has to be here too: this branch used to reach
       // `handleRequest` without it, so a holder of a valid token for a DIFFERENT subject could
       // send `DELETE /mcp` with somebody else's session id and `handleDeleteRequest` would close
-      // their conversation and answer 200. A GET likewise attached to their standalone stream.
+      // their conversation and answer 200. A GET likewise attached to their dedicated SSE stream.
       if (!ownsSession(existing, authorization, sessionId)) {
         sendRpcError(response, 403, 'This session belongs to another identity');
         return;

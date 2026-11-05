@@ -5,7 +5,7 @@ lives in `docs/`, and each section below says where.
 
 ## What this is
 
-A standalone MCP server for Ivanti Neurons for ITSM — 41 tools in `full` mode, 34 in `enduser`,
+An MCP server for Ivanti Neurons for ITSM — 41 tools in `full` mode, 34 in `enduser`,
 and six reference documents served as MCP resources. Shipped as a Docker image, also runnable
 locally; separate from the Overlord-hosted Ivanti MCP.
 

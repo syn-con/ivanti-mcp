@@ -4,15 +4,23 @@ MCP server for Ivanti Neurons for ITSM. **One release serves one tenant and one
 audience** — staging, UAT and production are three releases; `full` and `enduser` are
 two more.
 
+Source: [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp). For a release published from
+this repository after the transfer, set `VERSION` to its version and run:
+
 ```bash
-helm install ivanti-mcp oci://ghcr.io/tyrunasj/charts/ivanti-mcp \
+helm install ivanti-mcp oci://ghcr.io/syn-con/charts/ivanti-mcp \
+  --version "$VERSION" \
   --set server.publicUrl=https://mcp.example.com/mcp \
   --set 'server.trustedOrigins={https://claude.ai}' \
   --set ivanti.baseUrl=https://your-tenant.example.com \
   --set secrets.existingSecret=ivanti-mcp-secrets
 ```
 
-The package is public: no registry login is needed.
+Versions through **0.3.9** remain at `oci://ghcr.io/tyrunasj/charts/ivanti-mcp`; use that address
+for those versions. That package is public, so no registry login is needed. After the first
+release under `syn-con`, make the new chart package public to preserve anonymous installation.
+The [release notes](https://github.com/syn-con/ivanti-mcp/releases) give the chart address for each
+version. The Docker image remains `tyrunas/ivanti-mcp`.
 
 The chart forces HTTP (stdio is meaningless in a pod) and refuses to render on a
 configuration the server would reject at boot (`check-chart.mjs` feeds every rendered

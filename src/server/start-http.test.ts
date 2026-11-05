@@ -240,7 +240,7 @@ describe('startHttp: shutdown', () => {
   });
 
   /**
-   * The standalone `GET /mcp` stream is an in-flight response held open for the client's life, so
+   * The dedicated `GET /mcp` stream is an in-flight response held open for the client's life, so
    * `http.close()` never finishes while one is attached. Closing the sessions first is what ends
    * the stream; reverse the two and this hangs instead of resolving.
    */
