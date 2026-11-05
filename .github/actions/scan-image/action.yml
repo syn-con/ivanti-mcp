@@ -3,8 +3,8 @@ description: >
   Trivy over an image in the local Docker daemon: every finding into the job
   summary, and a failure when a critical or high finding has a fix.
 
-# ONE SCAN, THREE CALLERS: the pull-request Image job, the release Gate and the
-# weekly scan of what is published. It exists because pinning the base image by
+# ONE SCAN, TWO CALLERS: the release Gate and the weekly scan of what is published.
+# It exists because pinning the base image by
 # digest was not enough on its own — `nodejs22-debian12` stopped being rebuilt,
 # the pinned digest stayed the newest one, and Dependabot had nothing to propose
 # while Debian's fixes for its OpenSSL and glibc went unshipped
@@ -17,9 +17,8 @@ description: >
 # Fails only on a finding somebody can act on: critical or high WITH a fixed
 # version. One with no fix published yet is reported in the summary and does not
 # block — nothing in this repository could change it. Whether a caller blocks is
-# its choice: the release Gate does; a pull request only reports, because a fix
-# Debian has published is often not yet in the distroless base, and a change
-# that does not touch the image should not wait on that.
+# its choice: the release Gate blocks publication; the scheduled scan reports
+# findings in the image that is already published.
 #
 # `.trivyignore.yaml` at the repository root, when present, is honoured: every
 # entry carries a statement and an `expired_at`, after which it blocks again.

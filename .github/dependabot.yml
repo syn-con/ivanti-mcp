@@ -1,5 +1,5 @@
 # Version updates, weekly and grouped, so the supply chain moves by reviewed pull
-# request — each one through the same Checks and Image gates as any other change —
+# request — each one through the same Checks gate as any other change —
 # rather than by whatever a registry serves on the next build.
 #
 # Three things are pinned so that only this moves them: npm packages by the

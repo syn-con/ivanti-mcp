@@ -46,8 +46,9 @@ is a scan of the built image, not of the lockfile.
 (2026-09-30) failed on two highs in `libssl3t64 3.5.7-1~deb13u2`: Debian had shipped
 `deb13u3` within the hour, Trivy's database knew, and `gcr.io/distroless/nodejs22-debian13:nonroot`
 still pointed at the digest the Dockerfile pinned. Nothing in this repository could fix it until
-distroless rebuilt. So a pull request's scan reports and the release blocks; a release that cannot
-wait accepts the finding in `.trivyignore.yaml` with an expiry, and the Dependabot digest bump —
+distroless rebuilt. The release scan blocks publication; the scheduled scan reports findings in
+the published image. Docker builds now run only during release. A release that cannot wait accepts
+the finding in `.trivyignore.yaml` with an expiry, and the Dependabot digest bump —
 or a manual one — carries the fix when it lands.
 
 **`scratch` ships no CA bundle; every distroless image does.**

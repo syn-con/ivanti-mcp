@@ -50,14 +50,15 @@ finding with a fix available**, and passed the end-to-end MCP check against the 
 
 ## Security, 8 → 9
 
-**Progress (2026-09-30):** 1 — the scan runs in `Image`, in the release Gate before anything is
-pushed, and weekly over `latest`; SBOM and provenance were already attached to every image, and
+**Progress (2026-11-05):** 1 — Docker builds run only during release. The scan runs in the release
+Gate before anything is pushed, and weekly over the published `latest` without rebuilding it;
+SBOM and provenance were already attached to every image, and
 are now documented. 2 — the Handbook's *Hardening* section. 3 — fixed: every Ivanti error now
 carries the credential it was sent with, and only a 401 on the person's own re-opens their
 session. Left: 4.
 
-1. **Scan every image in CI** — Trivy or Grype on the built image in `Image` and in the release
-   Gate; fail on a critical or a fixable high. Attach an SBOM and build provenance to each image,
+1. **Scan every release image** — Trivy or Grype on the built image in the release
+   Gate; fail on a fixable critical or high. Attach an SBOM and build provenance to each image,
    verifiable with `cosign`. This is the check that would have caught the stale base.
 2. **Threat model and a hardening checklist** in the Handbook: what the API key and the
    CentralConfig key reach, the trust boundaries, and the recommended production profile — OAuth,
@@ -67,8 +68,8 @@ session. Left: 4.
 4. **Review what the full review left out:** the reference documents' correctness about Ivanti,
    and `scripts/`.
 
-**Done when:** CI refuses a known-vulnerable image, every release carries an SBOM and provenance,
-and the threat model is published.
+**Done when:** the release Gate refuses fixable critical or high findings, every release carries
+an SBOM and provenance, and the threat model is published.
 
 ## Operations and monitoring, 5 → 9
 

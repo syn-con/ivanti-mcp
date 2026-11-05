@@ -295,6 +295,8 @@ jobs:
           provenance: mode=max
           sbom: true
           cache-from: type=gha
+          # Release owns the build cache now that CI no longer builds images.
+          cache-to: type=gha,mode=max
 
       # Sign the digest, not a tag: a tag can be moved, a digest cannot. The
       # certificate names this file at refs/heads/main — which is what the
