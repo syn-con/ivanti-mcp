@@ -201,7 +201,8 @@ const CASES = [
   { name: 'the licence token is kept in its own Secret, reachable by that Secret only', has: [
     'name: LICENSE_STATE_SECRET, value: "ivanti-mcp-licence-state"', 'automountServiceAccountToken: true', 'kind: Role',
     'resourceNames: [ivanti-mcp-licence-state]', 'verbs: [get, update]', 'kind: RoleBinding', 'namespace: ivanti'] },
-  { name: 'keepState=false: no Secret, no Role, no token', set: { 'license.keepState': 'false' },
+  // --set, not --set-string: the string "false" is non-empty, so Helm's `if` reads it as true.
+  { name: 'keepState=false: no Secret, no Role, no token', setRaw: { 'license.keepState': 'false' },
     has: ['automountServiceAccountToken: false'], lacks: ['LICENSE_STATE_SECRET', 'kind: Role', 'licence-state'] },
   { name: 'a long release name keeps the licence-state suffix', set: { fullnameOverride: 'x'.repeat(70) },
     has: [`name: ${'x'.repeat(49)}-licence-state`] },

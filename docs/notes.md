@@ -108,6 +108,13 @@ release signs with cosign 3, which writes a Sigstore bundle as an OCI 1.1 referr
 older releases still verify; 2.6 needs `--new-bundle-format` for new ones, and 2.5 cannot verify
 them at all ("bundle support for image signatures is not yet implemented").
 
+**`--set-string key=false` is true to Helm's `if`.** It passes the string `"false"`, which is
+non-empty and therefore truthy, so `license.keepState=false` still rendered the licence-state
+Secret and its Role. The rendered `automountServiceAccountToken: false` looked right, because
+it prints the value instead of testing it. `scripts/check-chart.mjs` sends `set` through
+`--set-string`, so a boolean case belongs in `setRaw` (`--set`). → A user setting it through
+`--set-string`, or quoting it in a values file, gets the same result.
+
 ## Toolchain
 
 **TypeScript is pinned to 6.x deliberately.**
