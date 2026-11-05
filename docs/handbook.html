@@ -573,7 +573,7 @@ curl -s http://127.0.0.1:3000/health    <span class="cmt"># {"status":"ok"} — 
 
       <h3>C. Kubernetes</h3>
       <p>A Helm chart over the same image. It is HTTP-only and runs one replica.</p>
-      <p>New releases publish to <code>oci://ghcr.io/syn-con/charts/ivanti-mcp</code>. Versions through <code>0.3.9</code> remain at <code>oci://ghcr.io/tyrunasj/charts/ivanti-mcp</code>; the configurator uses that existing package for <code>0.3.9</code>. After the first release under <code>syn-con</code>, the package owner must make the new chart package public for installation without a registry login. Docker images continue to use <code>tyrunas/ivanti-mcp</code>.</p>
+      <p>Releases from <code>0.3.10</code> publish to <code>oci://ghcr.io/syn-con/charts/ivanti-mcp</code>, which the configurator uses. Versions through <code>0.3.9</code> remain at <code>oci://ghcr.io/tyrunasj/charts/ivanti-mcp</code>. After the first release under <code>syn-con</code>, the package owner must make the new chart package public for installation without a registry login. Docker images continue to use <code>tyrunas/ivanti-mcp</code>.</p>
       <ol class="steps">
         <li><b>Configurator:</b> pick <b>Kubernetes</b>, then download <code>values.yaml</code> and <code>helm-install.sh</code> into the folder.</li>
         <li><b>Edit <code>values.yaml</code>:</b> <code>server.publicUrl</code>, <code>server.trustedOrigins</code>, <code>ivanti.baseUrl</code>, and the ingress host if you publish it.</li>
@@ -1287,11 +1287,10 @@ function state() {
 const HOST_PIN = "your-tenant.example.com:203.0.113.10";
 // One version for every generated file. `pnpm version:sync` writes it from package.json and
 // `pnpm version:check` fails CI when it drifts.
-const VERSION = "0.3.9";
+const VERSION = "0.3.10";
 const IMAGE = "tyrunas/ivanti-mcp:" + VERSION;
-// The current 0.3.9 chart was published before the transfer. The next version:sync
-// switches generated commands to the organization's release namespace.
-const CHART = "oci://ghcr.io/" + (VERSION === "0.3.9" ? "tyrunasj" : "syn-con") + "/charts/ivanti-mcp";
+// Versions from 0.3.10 publish to the organization's chart namespace.
+const CHART = "oci://ghcr.io/syn-con/charts/ivanti-mcp";
 // The server refuses a bearer token under 32 characters, and a placeholder long enough
 // to pass would be one shared, published secret. So the page makes a fresh one per
 // view, in the browser; nothing sends it anywhere.

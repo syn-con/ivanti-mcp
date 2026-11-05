@@ -38,9 +38,11 @@ description, an argument or the server `instructions`? Run `pnpm handbook:sync` 
 checks than these; [`docs/development.md`](docs/development.md) lists them and says when to run
 each locally.
 
-**`main` is protected**, admins included: every change goes through a PR with `Checks`
-green. A change to the tool surface is verified by driving it against the live tenant, not only by
-tests — the loop is in [`docs/development.md`](docs/development.md#testing-against-the-live-tenant).
+**`main` is protected**, admins included: every change goes through an up-to-date PR with
+`Checks` green and one approving review. Only `tyrunasj` may bypass the review when merging a PR;
+direct pushes and CI bypass remain blocked. A change to the tool surface is verified by driving
+it against the live tenant, not only by tests — the loop is in
+[`docs/development.md`](docs/development.md#testing-against-the-live-tenant).
 
 **Read first, depending on the change:**
 
