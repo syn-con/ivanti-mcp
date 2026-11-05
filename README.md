@@ -38,7 +38,7 @@ description, an argument or the server `instructions`? Run `pnpm handbook:sync` 
 checks than these; [`docs/development.md`](docs/development.md) lists them and says when to run
 each locally.
 
-**`main` is protected**, admins included: every change goes through a PR with `Checks` and `Image`
+**`main` is protected**, admins included: every change goes through a PR with `Checks`
 green. A change to the tool surface is verified by driving it against the live tenant, not only by
 tests — the loop is in [`docs/development.md`](docs/development.md#testing-against-the-live-tenant).
 

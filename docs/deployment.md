@@ -171,7 +171,9 @@ accepted a signature from **any** workflow in the repository, on **any** branch 
 nobody reviewed.
 
 Tags: `1.2.3`, `1.2`, `1` and `latest` for a release; a prerelease publishes its exact version only.
-CI builds every commit for both architectures and pushes nothing. Pin a digest in production.
+Docker builds run only during Release: the Gate builds and scans amd64, then Publish builds
+amd64 and arm64, publishes, and saves the cache for the next release. CI validates code, chart,
+Dockerfile/context and tarball without building an image. Pin a digest in production.
 
 Three things that bite, all recorded in `notes.md`:
 
@@ -395,7 +397,7 @@ the chart's lint and guard renders.
 (the version in a comment beside it), the base images by digest, npm packages by the lockfile.
 `.github/dependabot.yml` proposes updates weekly — npm, the Dockerfile's images and the actions,
 grouped, with a cooldown of a few days after a version is published — and each goes through
-`Checks` and `Image` like any other change. A new Node or TypeScript major, and anything that
+`Checks` like any other change. A new Node or TypeScript major, and anything that
 moves `@modelcontextprotocol/sdk`, arrives on its own.
 
 **One step is CI's alone: the manifest size.** On a pull request, `ci.yml` measures the manifest
@@ -404,7 +406,7 @@ summary, with a one-line annotation. It informs and never blocks — `continue-o
 not in the shared list because a release has no base to compare with. See
 [`usage.md`](./usage.md).
 
-**`main` is protected, admins included.** A PR is required; `Checks` and `Image` must be green; the
+**`main` is protected, admins included.** A PR is required; `Checks` must be green; the
 branch must be up to date; force-pushes and deletions are refused; there is no bypass.
 
 Repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (Read/Write on `tyrunas/ivanti-mcp`).

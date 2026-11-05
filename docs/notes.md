@@ -11,6 +11,13 @@ somewhere else.* Each note says what breaks, why, and what to do.
 
 ## Packaging and containers
 
+**Production dependency updates must regenerate `THIRD-PARTY-NOTICES.md`.** Dependabot updates
+the manifest and lockfile, but the notices still describe the old installed tree, so CI's
+`check:licenses` fails even when the application tests pass. Run `pnpm run licenses`, then
+`pnpm check:licenses`, and commit the generated file with the dependency update. The `run` is
+required: `pnpm licenses` invokes pnpm's built-in license-listing command instead of this
+repository's generator.
+
 **A repository transfer does not move existing GHCR charts or rewrite image signatures.**
 The project now lives at [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp), with its
 handbook at <https://syn-con.github.io/ivanti-mcp/>. Chart versions through 0.3.9 are still published
@@ -46,8 +53,9 @@ is a scan of the built image, not of the lockfile.
 (2026-09-30) failed on two highs in `libssl3t64 3.5.7-1~deb13u2`: Debian had shipped
 `deb13u3` within the hour, Trivy's database knew, and `gcr.io/distroless/nodejs22-debian13:nonroot`
 still pointed at the digest the Dockerfile pinned. Nothing in this repository could fix it until
-distroless rebuilt. So a pull request's scan reports and the release blocks; a release that cannot
-wait accepts the finding in `.trivyignore.yaml` with an expiry, and the Dependabot digest bump —
+distroless rebuilt. The release scan blocks publication; the scheduled scan reports findings in
+the published image. Docker builds now run only during release. A release that cannot wait accepts
+the finding in `.trivyignore.yaml` with an expiry, and the Dependabot digest bump —
 or a manual one — carries the fix when it lands.
 
 **`scratch` ships no CA bundle; every distroless image does.**

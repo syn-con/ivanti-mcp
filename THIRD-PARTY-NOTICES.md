@@ -75,7 +75,7 @@ tree — 100 components, resolved exactly as the image resolves them.
 | `is-promise` | 4.0.0 | MIT | Copyright (c) 2014 Forbes Lindesay |
 | `is-unsafe` | 2.0.2 | MIT | Copyright (c) 2026 Natural Intelligence |
 | `isexe` | 2.0.0 | ISC | Copyright (c) Isaac Z. Schlueter and Contributors |
-| `jose` | 6.2.12 | MIT | Copyright (c) 2018 Filip Skokan |
+| `jose` | 6.2.13 | MIT | Copyright (c) 2018 Filip Skokan |
 | `json-schema-traverse` | 1.0.0 | MIT | Copyright (c) 2017 Evgeny Poberezkin |
 | `json-schema-typed` | 8.0.2 | BSD-2-Clause | Original source code is copyright (c) 2019-2025 Remy Rylan |
 | `math-intrinsics` | 1.1.0 | MIT | Copyright (c) 2024 ECMAScript Shims |
