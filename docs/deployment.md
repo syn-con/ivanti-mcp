@@ -8,17 +8,24 @@ tarball from the same commit.
 | **Linux host** | a systemd service | stdio or HTTP | the release tarball |
 | **Windows host** | a Windows service, run by WinSW | stdio or HTTP | the same release tarball |
 | **Container** | `docker run` / compose | either | `tyrunas/ivanti-mcp` on Docker Hub |
-| **Kubernetes** | a Deployment | HTTP only | `oci://ghcr.io/tyrunasj/charts/ivanti-mcp` |
+| **Kubernetes** | a Deployment | HTTP only | `oci://ghcr.io/syn-con/charts/ivanti-mcp` for releases after the transfer; see below for older versions |
+
+Source and releases live at [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp), and the
+[Handbook](https://syn-con.github.io/ivanti-mcp/) is published from this repository.
+**Chart versions through 0.3.9 remain at `oci://ghcr.io/tyrunasj/charts/ivanti-mcp`.** The repository
+transfer did not move those packages. Releases made from `syn-con` publish to the new namespace;
+use the chart address in the release notes for the version you are installing. Docker images
+continue to use `tyrunas/ivanti-mcp`.
 
 **The image and the chart live in different registries on purpose.** `helm push` derives the
 repository from the chart name, so pushing `ivanti-mcp` to Docker Hub's `tyrunas` namespace would
 overwrite the image; ghcr.io nests, so the chart lives under `charts/`.
 
-**The chart package is public** (since 2026-09-30, checked with an anonymous `helm show chart`),
-like the Docker Hub image, so `helm pull` and `helm install` need no credential. A package pushed by
-`GITHUB_TOKEN` starts private; visibility is a one-time, per-package setting, so a new package — a
-renamed chart, say — would need *Packages → the package → Package settings → Change visibility →
-Public* again.
+**The existing `tyrunasj` chart package is public**, like the Docker Hub image, so installing those
+versions needs no credential. After the first release to `syn-con`, set the new package's
+visibility under *Packages → the package → Package settings → Change visibility → Public* and
+confirm this repository has Actions access. Visibility is a per-package setting; the repository
+transfer does not make the new package public.
 
 Everywhere: **one instance serves one tenant** (staging, UAT and production are three deployments)
 and **one audience** (`full` and `enduser` are different products — mixing them hands an employee
@@ -33,7 +40,7 @@ keep the port close (loopback, or a NetworkPolicy) and set `METRICS_TOKEN` once 
 beyond the machine. Each shape's settings are below; the Handbook's configurator writes them.
 
 In the commands below, set `VERSION` to a release from
-<https://github.com/tyrunasj/ivanti-mcp-standalone/releases>.
+<https://github.com/syn-con/ivanti-mcp/releases>.
 
 ## 1. Linux host
 
@@ -52,7 +59,7 @@ nodejs.org. Then, with the `.env` and `ivanti-mcp.service` the Handbook's config
 2. **Install the release:**
 
    ```bash
-   curl -fsSLO https://github.com/tyrunasj/ivanti-mcp-standalone/releases/download/v$VERSION/ivanti-mcp-$VERSION.tar.gz
+   curl -fsSLO https://github.com/syn-con/ivanti-mcp/releases/download/v$VERSION/ivanti-mcp-$VERSION.tar.gz
    sudo useradd --system --home /opt/ivanti-mcp --shell /usr/sbin/nologin ivanti-mcp
    sudo install -d -o ivanti-mcp -g ivanti-mcp /opt/ivanti-mcp
    sudo tar xzf ivanti-mcp-$VERSION.tar.gz --strip-components=1 -C /opt/ivanti-mcp
@@ -141,13 +148,19 @@ the `0.0.0.0` bind, not the publish address that decides.
 
 Multi-arch (`amd64`, `arm64`), distroless, uid 65532, no shell and no package manager. **~55 MB to
 pull**, of which 52.6 MB is the distroless Node base; the ~235 MB `docker images` prints is the
-uncompressed size. Images are signed keylessly with cosign:
+uncompressed size. Images are signed keylessly with cosign. For a version published from
+`syn-con/ivanti-mcp`, set `VERSION` to that version and verify with:
 
 ```bash
 cosign verify tyrunas/ivanti-mcp:$VERSION \
-  --certificate-identity='https://github.com/tyrunasj/ivanti-mcp-standalone/.github/workflows/release.yml@refs/heads/main' \
+  --certificate-identity='https://github.com/syn-con/ivanti-mcp/.github/workflows/release.yml@refs/heads/main' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
+
+**Versions through 0.3.9 retain their original signing identity.** For those images, use the exact
+verification command in that version's [release notes](https://github.com/syn-con/ivanti-mcp/releases).
+Renaming the repository does not change an existing signature; the command above applies to
+releases published from the new repository address.
 
 It needs cosign 3, or 2.6 with `--new-bundle-format` added; 2.5 and older cannot verify releases
 after 0.3.1. Those are signed as a Sigstore bundle stored as an OCI 1.1 referrer, so there is no
@@ -158,7 +171,9 @@ accepted a signature from **any** workflow in the repository, on **any** branch 
 nobody reviewed.
 
 Tags: `1.2.3`, `1.2`, `1` and `latest` for a release; a prerelease publishes its exact version only.
-CI builds every commit for both architectures and pushes nothing. Pin a digest in production.
+Docker builds run only during Release: the Gate builds and scans amd64, then Publish builds
+amd64 and arm64, publishes, and saves the cache for the next release. CI validates code, chart,
+Dockerfile/context and tarball without building an image. Pin a digest in production.
 
 Three things that bite, all recorded in `notes.md`:
 
@@ -203,7 +218,7 @@ Handbook's configurator emits one pinned to the image.
 ## 3. Kubernetes
 
 ```bash
-helm install ivanti-mcp oci://ghcr.io/tyrunasj/charts/ivanti-mcp \
+helm install ivanti-mcp oci://ghcr.io/syn-con/charts/ivanti-mcp \
   --version $VERSION \
   --set server.publicUrl=https://mcp.example.com/mcp \
   --set 'server.trustedOrigins={https://claude.ai}' \
@@ -211,7 +226,9 @@ helm install ivanti-mcp oci://ghcr.io/tyrunasj/charts/ivanti-mcp \
   --set secrets.existingSecret=ivanti-mcp-secrets
 ```
 
-(Anonymous access needs the chart package made public — see the top of this page.)
+For `VERSION=0.3.9` or an earlier release, replace the chart address with
+`oci://ghcr.io/tyrunasj/charts/ivanti-mcp`. Anonymous access to the new namespace needs the new chart
+package made public — see the top of this page.
 
 The chart forces `STDIO_TRANSPORT_ON=false`, `HTTP_TRANSPORT_ON=true` and `MCP_BIND=0.0.0.0` — none
 is a choice in a pod. **It refuses to render** what the server would refuse to start with, moving
@@ -380,7 +397,7 @@ the chart's lint and guard renders.
 (the version in a comment beside it), the base images by digest, npm packages by the lockfile.
 `.github/dependabot.yml` proposes updates weekly — npm, the Dockerfile's images and the actions,
 grouped, with a cooldown of a few days after a version is published — and each goes through
-`Checks` and `Image` like any other change. A new Node or TypeScript major, and anything that
+`Checks` like any other change. A new Node or TypeScript major, and anything that
 moves `@modelcontextprotocol/sdk`, arrives on its own.
 
 **One step is CI's alone: the manifest size.** On a pull request, `ci.yml` measures the manifest
@@ -389,7 +406,7 @@ summary, with a one-line annotation. It informs and never blocks — `continue-o
 not in the shared list because a release has no base to compare with. See
 [`usage.md`](./usage.md).
 
-**`main` is protected, admins included.** A PR is required; `Checks` and `Image` must be green; the
+**`main` is protected, admins included.** A PR is required; `Checks` must be green; the
 branch must be up to date; force-pushes and deletions are refused; there is no bypass.
 
 Repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (Read/Write on `tyrunas/ivanti-mcp`).
@@ -399,6 +416,8 @@ Repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (Read/Write on `tyru
 The cluster runs this through ArgoCD, and **releasing does not touch it**. `argocd-apps/ivanti-mcp.yaml`
 in `tyrunasj/k3s-home-lab` is a multi-source Application: the chart from this repo at a release
 **tag** (from git — which predates the ghcr package going public), the values from that repo at `main`.
+Its chart source `repoURL`, and any workflow that looks up this project's releases, should use
+`https://github.com/syn-con/ivanti-mcp`. The home-lab repository keeps its own owner and name.
 
 Deploying is **Actions → deploy-ivanti-mcp → Run workflow** there, with a tag or empty for the
 latest. It checks that `Chart.yaml` at that tag agrees with the tag — `appVersion` *is* the deployed

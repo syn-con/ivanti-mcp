@@ -15,7 +15,7 @@ interface Entry<T> {
   subject?: string;
   /** Requests being answered right now: a POST or DELETE with an answer still to give. */
   inFlight: number;
-  /** Standalone GET streams held open. The client's presence, not work in progress. */
+  /** Dedicated GET streams held open. The client's presence, not work in progress. */
   attached: number;
 }
 
@@ -138,7 +138,7 @@ export class SessionStore<T> {
     entry.lastSeen = this.now();
   }
 
-  /** A client attached its standalone GET stream. */
+  /** A client attached its dedicated GET stream. */
   attach(id: string): void {
     const entry = this.entries.get(id);
     if (entry !== undefined) entry.attached += 1;

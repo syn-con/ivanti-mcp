@@ -16,6 +16,8 @@ permissions:
 # Third-party actions are pinned by commit SHA with the version beside it; a tag
 # is a pointer its owner can move. Dependabot proposes the next SHA.
 
+# Docker builds run in Release. CI keeps the code, chart,
+# Dockerfile/context validation and relocatable tarball checks on PRs and main.
 jobs:
   verify:
     name: Checks
@@ -25,7 +27,7 @@ jobs:
     timeout-minutes: 15
     steps:
       # Credentials stay: the manifest-size step below fetches the base branch.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The whole check list, shared with release.yml so the release gate cannot
       # drift into being a weaker subset of this one — the chart's lint and guard
@@ -68,63 +70,3 @@ jobs:
             echo "::warning title=Manifest size::Could not measure $GITHUB_BASE_REF; reporting this pull request alone."
             pnpm -s manifest:size --markdown >> "$GITHUB_STEP_SUMMARY"
           fi
-
-  image:
-    name: Image
-    runs-on: ubuntu-latest
-    needs: verify
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-
-      # CI BUILDS BUT NEVER PUBLISHES. Publishing is release.yml, which runs on a
-      # button and takes its version from package.json — no tag, and nothing here,
-      # ever pushes an image.
-      #
-      # What is worth checking on every commit is that the image still builds for
-      # both architectures — arm64 goes through QEMU here and is the one that
-      # breaks. What is NOT worth doing is filling a public registry with a tag per
-      # commit: `main` and `sha-<short>` are indistinguishable from a release to
-      # anyone reading the tag list, and they cost a push every merge.
-      #
-      # Because nothing is pushed, this job needs no registry credentials at all —
-      # which also means a fork's pull request builds exactly what main does.
-      # The build context is the REPOSITORY ROOT.
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: false
-          tags: ivanti-mcp:ci
-          cache-from: type=gha
-          # Warms the cache the release build reads, so a release does not rebuild
-          # both architectures from scratch.
-          cache-to: type=gha,mode=max
-
-      # A multi-arch build cannot be loaded into the local daemon, so the scan gets
-      # an amd64 build of its own — from the cache just warmed, so it costs seconds.
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: linux/amd64
-          load: true
-          push: false
-          tags: ivanti-mcp:scan
-          cache-from: type=gha
-
-      # Reports, and does not block: a fix Debian has published is often not yet in
-      # the distroless base, and a change that does not touch the image should not
-      # wait on it. The release Gate is where a fixable critical or high blocks.
-      - uses: ./.github/actions/scan-image
-        with:
-          image: ivanti-mcp:scan
-          fail-on-fixable: 'false'

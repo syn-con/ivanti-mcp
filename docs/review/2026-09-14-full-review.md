@@ -168,7 +168,7 @@ runs `finally { await this.close() }` and answers 200. `mcp-handler.test.ts:212`
 and only the POST case.
 
 The SSE half is less than it first appears, and the skeptic was right to narrow it: a GET does attach
-to the victim's standalone stream, but this codebase sends no server-initiated messages — no
+to the victim's dedicated SSE stream, but this codebase sends no server-initiated messages — no
 `sendLoggingMessage`, no notifications, no `elicitInput` — and tool results travel on the POST's own
 stream keyed by request id. So the realistic harm is **denial of service on another subject's
 session**, not disclosure of their data.
@@ -398,7 +398,7 @@ The shutdown path leaks the rest, twice over:
 
 - `startHttp` hangs every cleanup off `http.on('close')`, and `index.ts` calls
   `http.close(() => process.exit(0))`. `http.close()` does not end in-flight responses, and the
-  standalone `GET /mcp` SSE stream **is** an in-flight response held open for the life of the client
+  dedicated `GET /mcp` SSE stream **is** an in-flight response held open for the life of the client
   (`docs/notes.md:160` records a measured 131-second stream). With one client attached — the ordinary
   state — neither the callback nor the `'close'` event fires. `stopSweeping()` and
   `sessions.closeAll()` never run and the process waits for SIGKILL.

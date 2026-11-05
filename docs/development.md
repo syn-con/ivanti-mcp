@@ -29,7 +29,7 @@ exits 78 (`EX_CONFIG`) with a list of every problem when configuration is incomp
 **Before any commit, run all four:** `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 `pnpm handbook:sync` regenerates the manifest snapshot `docs/handbook.html` embeds, and
 `pnpm handbook:check` (run in CI) fails when a description changed without it. Merged to `main`,
-the page is published to <https://tyrunasj.github.io/ivanti-mcp-standalone/> by the `Pages`
+the page is published to <https://syn-con.github.io/ivanti-mcp/> by the `Pages`
 workflow. `pnpm version:sync` writes `package.json`'s version into `Chart.yaml` and the handbook.
 
 `pnpm budget` prints the manifest and `instructions` spend against their caps — the figures no
@@ -48,13 +48,16 @@ guard rendered, failing if a refusal renders or a valid configuration does not. 
 the `PATH`. Run the one that covers what you touched: an example env, the Dockerfile or
 `.dockerignore`, the chart.
 
-**The image is scanned** by `.github/actions/scan-image` — Trivy, pinned by digest, over the built
-image exported as a tarball — and every finding goes to the job log and summary. **The release's
-Gate blocks** on a critical or high finding that has a fix, before anything is pushed. **A pull
-request's `Image` job only reports**: a fix Debian has published is often not yet in the distroless
-base, and a change that does not touch the image should not wait on that.
+**Docker images are built only by Release.** Pull requests and merges to `main` run `Checks`,
+including Dockerfile/context validation, chart renders and a relocatable release tarball, without
+building a container image. Multi-architecture build failures are caught during release.
+
+**The release image is scanned** by `.github/actions/scan-image` — Trivy, pinned by digest, over
+the built image exported as a tarball — and every finding goes to the job log and summary.
+**The release's Gate blocks** on a critical or high finding that has a fix, before anything is pushed.
 `.github/workflows/scan.yml` scans the published `latest` every Monday and opens (or comments on)
-an `image-scan` issue. When a release cannot wait for upstream, accept the finding in
+an `image-scan` issue; it pulls the published image and does not rebuild it.
+When a release cannot wait for upstream, accept the finding in
 `.trivyignore.yaml` — a statement and an `expired_at`, after which it blocks again — and remove the
 entry once the base carries the fix. To scan by hand, run the step's script against a local image
 with `RUNNER_TEMP`, `GITHUB_OUTPUT`, `GITHUB_STEP_SUMMARY` and `GITHUB_WORKSPACE` set.
