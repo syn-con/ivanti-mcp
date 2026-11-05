@@ -11,6 +11,13 @@ somewhere else.* Each note says what breaks, why, and what to do.
 
 ## Packaging and containers
 
+**Production dependency updates must regenerate `THIRD-PARTY-NOTICES.md`.** Dependabot updates
+the manifest and lockfile, but the notices still describe the old installed tree, so CI's
+`check:licenses` fails even when the application tests pass. Run `pnpm run licenses`, then
+`pnpm check:licenses`, and commit the generated file with the dependency update. The `run` is
+required: `pnpm licenses` invokes pnpm's built-in license-listing command instead of this
+repository's generator.
+
 **A repository transfer does not move existing GHCR charts or rewrite image signatures.**
 The project now lives at [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp), with its
 handbook at <https://syn-con.github.io/ivanti-mcp/>. Chart versions through 0.3.9 are still published
