@@ -40,7 +40,7 @@ What a deployment exposes is decided by independent axes, all fixed at startup:
   handbook embeds the manifest, and CI's `handbook:check` fails when it differs.
 - **Changed the chart?** Run `node scripts/check-chart.mjs` (needs `helm`) — CI renders every
   guard and fails when a refusal renders or a valid configuration does not.
-- **`main` is protected, admins included:** a PR, with `Checks` and `Image` green. `/ship` runs
+- **`main` is protected, admins included:** a PR, with `Checks` green. `/ship` runs
   the whole flow.
 - **A tool-surface change is verified by driving it** against the live tenant through
   `ivanti-http`, the k3s deployment, once it is released and deployed — unit tests have passed
