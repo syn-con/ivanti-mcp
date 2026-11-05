@@ -367,6 +367,10 @@ first step) reads `package.json`, refuses a version already released, runs the s
 publishes, and **creates the tag last**, at the commit it built and signed — so a run that dies
 halfway retries by pressing the button again instead of leaving an orphan tag.
 
+Release notes start with the matching version's section in `CHANGELOG.md`, when present, followed
+by GitHub's generated list of all PRs since the previous release and the deployment instructions.
+Write the upgrade guidance and user-visible changes in that changelog section before shipping.
+
 It is **two jobs**. *Gate* runs the checks — every devDependency, installed and executed — with
 `contents: read` and nothing else, and builds the tarball. *Publish* holds the write token, the OIDC
 token that signs as `release.yml@refs/heads/main`, and the Docker Hub credentials, installs no npm
@@ -406,8 +410,12 @@ summary, with a one-line annotation. It informs and never blocks — `continue-o
 not in the shared list because a release has no base to compare with. See
 [`usage.md`](./usage.md).
 
-**`main` is protected, admins included.** A PR is required; `Checks` must be green; the
-branch must be up to date; force-pushes and deletions are refused; there is no bypass.
+**`main` is protected, admins included.** Every change requires an up-to-date PR with `Checks`
+green and one approving review. New reviewable commits dismiss earlier approvals. Only
+`tyrunasj` may bypass the review requirement when merging a PR; this does not permit direct
+pushes or bypassing CI. Unresolved review conversations still block merging, and force-pushes
+and branch deletion remain forbidden. The [review ruleset](https://github.com/syn-con/ivanti-mcp/rules/26623181)
+adds the approval requirement alongside the existing branch protection.
 
 Repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (Read/Write on `tyrunas/ivanti-mcp`).
 

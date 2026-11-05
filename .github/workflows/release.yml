@@ -317,9 +317,10 @@ jobs:
           helm push "${RUNNER_TEMP}/chart/ivanti-mcp-${VERSION}.tgz" \
             "oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/charts"
 
-      # GitHub's own generator: the PR titles merged since the previous tag, the
-      # contributors, and a full-changelog link. Fetched explicitly rather than via
-      # `generate_release_notes: true`, because that APPENDS its block after the body
+      # The current version's changelog explains the changes and upgrade steps.
+      # GitHub's generator adds every merged PR, contributors and a compare link.
+      # Fetched explicitly rather than via `generate_release_notes: true`, because
+      # that APPENDS its block after the body
       # — which buries what changed under the install instructions. Here it leads.
       #
       # `target_commitish` is required: the tag does not exist yet.
@@ -329,12 +330,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          summary="$(awk -v version="${VERSION}" '
+            /^## / { if (found) exit; found = ($2 == version); next }
+            found { print }
+          ' CHANGELOG.md)"
           changed="$(gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
             -f tag_name="${TAG}" -f target_commitish="${GITHUB_SHA}" --jq .body)"
           # A heredoc delimiter that cannot occur in generated markdown.
           {
             echo "body<<__RELEASE_NOTES_EOF__"
+            if [ -n "${summary}" ]; then
+              printf '%s\n\n' "${summary}"
+            fi
             echo "${changed}"
             echo "__RELEASE_NOTES_EOF__"
           } >> "$GITHUB_OUTPUT"

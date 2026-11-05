@@ -4,6 +4,50 @@ What changed for someone running the server, newest first. **Upgrading** says wh
 before moving to a release; a release with nothing under it upgrades by swapping the version. The
 full list of merged changes is on each [GitHub release](https://github.com/syn-con/ivanti-mcp/releases).
 
+## 0.3.10 — 2026-11-05
+
+Repository migration, refreshed dependencies and a leaner release pipeline. No MCP tool names,
+arguments or configuration keys change in this release.
+
+**Upgrading.** The Docker image stays at `tyrunas/ivanti-mcp`; update its tag to `0.3.10`.
+Helm charts from this release publish at `oci://ghcr.io/syn-con/charts/ivanti-mcp`. When verifying
+the image, use the signing identity
+`https://github.com/syn-con/ivanti-mcp/.github/workflows/release.yml@refs/heads/main`.
+Charts and signatures for versions through 0.3.9 retain their original locations and identities;
+their release notes contain the matching verification commands.
+
+- **The project now lives at [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp).**
+  Repository links, clone and download examples, chart and image metadata, Postman examples,
+  service instructions and historical documentation use the current project name and address.
+  Legacy project naming was removed throughout the repository.
+- **The [Handbook and configurator](https://syn-con.github.io/ivanti-mcp/) are on GitHub Pages.**
+  Generated install commands now use version 0.3.10, the new chart namespace and current release
+  links. Documentation distinguishes new artifacts from those published before the transfer.
+- **Docker images build only during Release.** PRs and merges to `main` retain code, chart,
+  Dockerfile/context and relocatable tarball checks, without repeated image builds. Release
+  retains its vulnerability gate, amd64/arm64 publication, signing, SBOM and provenance, and now
+  saves its own build cache. The weekly scan pulls the published image without rebuilding it.
+  All workflows run on GitHub-hosted runners.
+- **Production dependencies are refreshed.** `@modelcontextprotocol/sdk` moves from 1.32.1 to
+  1.32.2 and `jose` from 6.2.12 to 6.2.13. Transitive updates include `@hono/node-server`
+  2.1.1 → 2.1.5, Express 5.2.1 → 5.3.0, `content-disposition` 1.1.0 → 2.0.1,
+  `express-rate-limit` 8.7.0 → 8.7.1 and `on-finished` 2.4.1 → 2.4.2; the redundant `qs`
+  6.16.0 entry is removed. Third-party notices are regenerated for the resulting dependency tree.
+- **The container base is refreshed.** The pinned Node 22 / Debian 13 distroless image moves
+  from digest `ec231376…` to `8ad9cc93…`, retaining the non-root runtime and both architectures.
+- **Development dependencies are refreshed.** `typescript-eslint` and its packages move from
+  8.72.0 to 8.72.1, `ignore` from 7.0.10 to 7.0.14, and PostCSS from 8.5.31 to 8.5.32.
+- **GitHub Actions are updated and remain pinned by commit.** `actions/checkout` 4.4.0 → 7.0.1,
+  `actions/download-artifact` 4.3.0 → 8.0.2, `actions/upload-artifact` 7.0.1 → 7.0.2,
+  `actions/setup-node` 4.4.0 → 7.1.0, `pnpm/action-setup` 4.3.0 → 6.1.0,
+  `docker/setup-buildx-action` 3.12.0 → 4.4.1, and `docker/login-action` 4.6.0 → 4.7.0.
+  The project still uses Node 22 and pnpm 10.20.0.
+- **Merging to `main` requires one approving review.** Only `tyrunasj` may bypass that review
+  when merging a PR. Direct pushes stay blocked, CI must pass on an up-to-date branch, and new
+  reviewable commits dismiss earlier approvals. Force-pushes and branch deletion stay blocked.
+- **Release notes lead with the version's changelog.** The Release workflow now includes this
+  summary before GitHub's complete merged-PR list and the deployment and verification commands.
+
 ## 0.3.9 — 2026-10-27
 
 Found by reading a model file two onboarding requests.
