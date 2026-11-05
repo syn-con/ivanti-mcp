@@ -2,7 +2,7 @@
 
 What changed for someone running the server, newest first. **Upgrading** says what to check
 before moving to a release; a release with nothing under it upgrades by swapping the version. The
-full list of merged changes is on each [GitHub release](https://github.com/tyrunasj/ivanti-mcp-standalone/releases).
+full list of merged changes is on each [GitHub release](https://github.com/syn-con/ivanti-mcp/releases).
 
 ## 0.3.9 — 2026-10-27
 
@@ -232,4 +232,4 @@ NetworkPolicy and a `rolloutToken`.
 
 ## Earlier
 
-See the [GitHub releases](https://github.com/tyrunasj/ivanti-mcp-standalone/releases).
+See the [GitHub releases](https://github.com/syn-con/ivanti-mcp/releases).
