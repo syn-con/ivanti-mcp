@@ -386,7 +386,7 @@ describe('createMcpHandler', () => {
    * `sameSubject` lived inline in the POST branch, so a holder of a valid token for a DIFFERENT
    * subject could send `DELETE /mcp` with somebody else's session id — `handleDeleteRequest`
    * closes the transport in a `finally` and answers 200, destroying their conversation — or `GET`
-   * to attach to their standalone SSE stream. Only the POST case was covered.
+   * to attach to their dedicated SSE stream. Only the POST case was covered.
    */
   it.each(['GET', 'DELETE'])(
     'refuses a %s on a session that belongs to another verified identity',

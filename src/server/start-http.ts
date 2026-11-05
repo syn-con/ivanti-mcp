@@ -151,7 +151,7 @@ interface Session extends McpSession {
 /**
  * The listener, plus the teardown that has to happen before it stops listening.
  *
- * `close()` is not `http.close()`: that waits for every in-flight response, and the standalone
+ * `close()` is not `http.close()`: that waits for every in-flight response, and the dedicated
  * `GET /mcp` SSE stream IS an in-flight response held open for the life of the client — measured
  * at 131 s in notes.md, i.e. the ordinary state rather than an edge. With one client attached the
  * callback and the `'close'` event never fired, so nothing that hung off them ever ran and the

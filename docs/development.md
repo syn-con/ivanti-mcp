@@ -29,7 +29,7 @@ exits 78 (`EX_CONFIG`) with a list of every problem when configuration is incomp
 **Before any commit, run all four:** `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 `pnpm handbook:sync` regenerates the manifest snapshot `docs/handbook.html` embeds, and
 `pnpm handbook:check` (run in CI) fails when a description changed without it. Merged to `main`,
-the page is published to <https://tyrunasj.github.io/ivanti-mcp-standalone/> by the `Pages`
+the page is published to <https://syn-con.github.io/ivanti-mcp/> by the `Pages`
 workflow. `pnpm version:sync` writes `package.json`'s version into `Chart.yaml` and the handbook.
 
 `pnpm budget` prints the manifest and `instructions` spend against their caps — the figures no
