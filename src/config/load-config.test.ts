@@ -315,8 +315,4 @@ describe('loadConfig: licence settings', () => {
     expect(() => loadConfig({ LICENSE_INSTALL_ID: 'my-server' })).toThrow(/LICENSE_INSTALL_ID/);
     expect(() => loadConfig({ LICENSE_MACHINE_ID: 'node-1' })).toThrow(/LICENSE_MACHINE_ID/);
   });
-
-  it('treats an empty Hub address as unset, leaving the built-in one', () => {
-    expect(loadConfig({ LICENSE_HUB_URL: '' }).LICENSE_HUB_URL).toBeUndefined();
-  });
 });

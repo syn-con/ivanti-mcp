@@ -54,6 +54,5 @@ export const configFixture = (overrides: Partial<Config> = {}): Config => ({
   LICENSE_MACHINE_ID: undefined,
   LICENSE_STATE_DIR: undefined,
   LICENSE_STATE_SECRET: undefined,
-  LICENSE_HUB_URL: undefined,
   ...overrides,
 });

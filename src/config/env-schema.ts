@@ -293,8 +293,6 @@ export const envSchema = z.object({
   LICENSE_STATE_DIR: z.string().min(1).optional(),
   /** Under the chart: the Secret, in the pod's own namespace, that keeps the last verified token. */
   LICENSE_STATE_SECRET: z.string().min(1).optional(),
-  /** Overrides the built-in Hub address. Never a way to turn licensing off. */
-  LICENSE_HUB_URL: z.url().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

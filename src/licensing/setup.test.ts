@@ -23,12 +23,13 @@ describe('setUpLicensing: where the stdio install ID is kept', () => {
   });
 
   // An unreachable Hub on loopback: nothing leaves the machine.
-  const stdio = { STDIO_TRANSPORT_ON: true, HTTP_TRANSPORT_ON: false, LICENSE_INSTALL_ID: undefined, LICENSE_HUB_URL: 'http://127.0.0.1:9' };
+  const hub = 'http://127.0.0.1:9';
+  const stdio = { STDIO_TRANSPORT_ON: true, HTTP_TRANSPORT_ON: false, LICENSE_INSTALL_ID: undefined };
 
   it('keeps it in LICENSE_STATE_DIR when set, so a container volume carries it from run to run', () => {
     const configDir = freshDir();
     const stateDir = freshDir();
-    const { licensing } = setUpLicensing(configFixture({ ...stdio, LICENSE_STATE_DIR: stateDir }), { configDir, kubernetes: () => undefined }, silent);
+    const { licensing } = setUpLicensing(configFixture({ ...stdio, LICENSE_STATE_DIR: stateDir }), { configDir, kubernetes: () => undefined }, silent, hub);
     licensing.stop();
 
     expect(existsSync(join(stateDir, 'install-id'))).toBe(true);
@@ -37,7 +38,7 @@ describe('setUpLicensing: where the stdio install ID is kept', () => {
 
   it('keeps it in the config folder otherwise', () => {
     const configDir = freshDir();
-    const { licensing } = setUpLicensing(configFixture(stdio), { configDir, kubernetes: () => undefined }, silent);
+    const { licensing } = setUpLicensing(configFixture(stdio), { configDir, kubernetes: () => undefined }, silent, hub);
     licensing.stop();
 
     expect(existsSync(join(configDir, 'install-id'))).toBe(true);

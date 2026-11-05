@@ -24,7 +24,7 @@ describe('verifyLicenceToken', () => {
 
   it('accepts an audience array that includes this product', async () => {
     const hub = await fakeHubKeys();
-    const token = await hub.sign({ fingerprint: FINGERPRINT, iat: IAT, aud: ['another-product', 'ivanti-mcp-standalone'] });
+    const token = await hub.sign({ fingerprint: FINGERPRINT, iat: IAT, aud: ['another-product', 'ivanti-mcp'] });
 
     await expect(verifyLicenceToken(token, { keys: hub.keys, fingerprint: FINGERPRINT, now: NOW, as: 'fresh' })).resolves.toBeDefined();
   });
@@ -92,7 +92,7 @@ describe('verifyLicenceToken', () => {
   it('refuses a stored token whose payload was edited to look newer', async () => {
     const hub = await fakeHubKeys();
     const [header, , signature] = (await hub.sign({ fingerprint: FINGERPRINT, iat: IAT })).split('.');
-    const forged = Buffer.from(JSON.stringify({ aud: 'ivanti-mcp-standalone', iat: IAT + 40 * 86_400, validUntil: '2099-12-31' })).toString('base64url');
+    const forged = Buffer.from(JSON.stringify({ aud: 'ivanti-mcp', iat: IAT + 40 * 86_400, validUntil: '2099-12-31' })).toString('base64url');
 
     await expect(
       verifyLicenceToken(`${header ?? ''}.${forged}.${signature ?? ''}`, {

@@ -6,7 +6,7 @@ full list of merged changes is on each [GitHub release](https://github.com/syn-c
 
 ## 0.4.0 — unreleased
 
-The server is licensed through the Synergy Hub, as product `ivanti-mcp-standalone`.
+The server is licensed through the Synergy Hub, as product `ivanti-mcp`.
 
 **Upgrading.** Every deployment now needs a **Synergy Hub licence key**, and outbound HTTPS to
 `https://hub.itsmcloud.lt`. Before moving to 0.4.0:

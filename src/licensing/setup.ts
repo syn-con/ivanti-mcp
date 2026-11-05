@@ -28,7 +28,16 @@ export interface LicensingSetup {
   readonly licensing: Licensing;
 }
 
-export function setUpLicensing(config: Config, platform: LicensingPlatform, logger: Logger): LicensingSetup {
+/**
+ * The Hub's address is built in and no setting changes it (design §9f); `hubUrl` exists so the
+ * tests can point at an unreachable loopback address instead of the real Hub.
+ */
+export function setUpLicensing(
+  config: Config,
+  platform: LicensingPlatform,
+  logger: Logger,
+  hubUrl: string = DEFAULT_HUB_URL,
+): LicensingSetup {
   // validateConfig has refused a missing key, and a missing install ID over HTTP.
   const licenceKey = config.LICENSE_KEY ?? '';
   // Kept beside the stored licence when there is a state folder: a container's volume outlives the
@@ -39,14 +48,14 @@ export function setUpLicensing(config: Config, platform: LicensingPlatform, logg
   const state = createLicenceState();
 
   logger.info('licence: activating with the Synergy Hub', {
-    hub: config.LICENSE_HUB_URL ?? DEFAULT_HUB_URL,
+    hub: hubUrl,
     installId: fingerprint.installGuid,
     machineId: fingerprint.machineGuid,
     store: store.describe,
   });
 
   const licensing = startLicensing({
-    hub: createHubClient({ baseUrl: config.LICENSE_HUB_URL, licenceKey }),
+    hub: createHubClient({ baseUrl: hubUrl, licenceKey }),
     fingerprint,
     state,
     store,

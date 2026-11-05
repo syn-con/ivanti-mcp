@@ -176,11 +176,6 @@ app.kubernetes.io/component: metrics
 {{- fail (printf "license.installId must be a UUID (got %q). Generate one: node -e \"console.log(crypto.randomUUID())\"" (toString .)) -}}
 {{- end -}}
 {{- end -}}
-{{- with .Values.license.hubUrl -}}
-{{- if not (hasPrefix "https://" (toString .)) -}}
-{{- fail (printf "license.hubUrl must be https (got %q): the licence key travels with every heartbeat. The server refuses the same." (toString .)) -}}
-{{- end -}}
-{{- end -}}
 {{- if not (has .Values.server.authMode (list "none" "bearer" "oauth")) -}}
 {{- fail (printf "server.authMode must be none, bearer or oauth (got %q)." (toString .Values.server.authMode)) -}}
 {{- end -}}

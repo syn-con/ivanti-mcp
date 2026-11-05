@@ -8,7 +8,7 @@ import type { Fingerprint } from './fingerprint.js';
 export const DEFAULT_HUB_URL = 'https://hub.itsmcloud.lt';
 
 /** The product key the Hub's catalogue holds for this server; the token's `aud` must carry it. */
-export const PRODUCT_KEY = 'ivanti-mcp-standalone';
+export const PRODUCT_KEY = 'ivanti-mcp';
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 

@@ -648,12 +648,4 @@ describe('licence settings (design §9f)', () => {
       licenceProblems({ LICENSE_STATE_DIR: '/var/lib/ivanti-mcp', LICENSE_STATE_SECRET: 'licence-state' }),
     ).toEqual([expect.stringMatching(/^LICENSE_STATE_DIR and LICENSE_STATE_SECRET are both set/)]);
   });
-
-  it('refuses a plain-http Hub, except on loopback', () => {
-    expect(licenceProblems({ LICENSE_HUB_URL: 'http://hub.example.com' })).toEqual([
-      expect.stringContaining('LICENSE_HUB_URL'),
-    ]);
-    expect(licenceProblems({ LICENSE_HUB_URL: 'http://localhost:8080' })).toEqual([]);
-    expect(licenceProblems({ LICENSE_HUB_URL: 'https://hub.example.com' })).toEqual([]);
-  });
 });

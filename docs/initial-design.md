@@ -313,7 +313,7 @@ auth mode. Token propagation to Ivanti is settled by §11.
 ## 9f. Licensing through the Synergy Hub (decided 2026-11-04)
 
 The product is licensed by the Synergy Hub (`Synergy.Hub`, Context B: on-premise products) under
-the product key `ivanti-mcp-standalone`. Only two of the Hub's operations are used — activate and
+the product key `ivanti-mcp`. Only two of the Hub's operations are used — activate and
 heartbeat — plus its public keys to check what they return. One licence gives full access: no
 feature is gated, usage is not reported, and the update feed is not read.
 
@@ -336,7 +336,7 @@ feature is gated, usage is not reported, and the update feed is not read.
   licence model says otherwise).
 - **Heartbeat every 4 minutes.** The token expires 5 minutes after issue (`exp`); the licence's
   real end is `validUntil`. A token is trusted only once its ES256 signature checks against the
-  Hub's published keys and its `aud` contains `ivanti-mcp-standalone`.
+  Hub's published keys and its `aud` contains `ivanti-mcp`.
 - **Unlicensed means tools refused, never a refusal to start.** One licence check in
   `registerTools`, ahead of the identity gate, refuses every tool but `get_version` — `act_as`
   included, so nothing reaches Ivanti on anyone's behalf — and every refusal carries the reason.
@@ -351,9 +351,9 @@ feature is gated, usage is not reported, and the update feed is not read.
   editing the store cannot extend it, and the request nonce (echoed inside the signed token)
   carries a hash of `installGuid`, so a token copied from another installation is refused. Any
   refusal from the Hub clears the store.
-- **The Hub's address is built in** (`https://hub.itsmcloud.lt`) and may be overridden with
-  `LICENSE_HUB_URL`; an empty or plain-`http` value is refused rather than read as "licensing
-  off" — the mistake SDAP's first client made.
+- **The Hub's address is built in** (`https://hub.itsmcloud.lt`) and no setting changes it, so
+  no value can be read as "licensing off" — the mistake SDAP's first client made — and a
+  deployment cannot be pointed at a Hub of its own.
 - **No offline activation.** Outbound HTTPS to the Hub is a requirement; air-gapped deployments are
   not supported.
 

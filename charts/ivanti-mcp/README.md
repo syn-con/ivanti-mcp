@@ -54,7 +54,6 @@ Full notes, including the secret-ownership and DNS traps, are in
 | `server.enduser.role` | — | The self-service role an impersonated `enduser` session opens under; empty means the server default, `SelfServiceMobile`. |
 | `license.installId` | — | This installation's identity to the Synergy Hub. Empty: derived from the namespace and release name, the same on every upgrade, sync and `helm template`. Set it to keep the seat when moving the release; a change takes a new seat. |
 | `license.keepState` | `true` | Keeps the last licence the Hub confirmed in the `<fullname>-licence-state` Secret, so a restart during a Hub outage keeps its 30 days. Renders that Secret, a Role that may `get` and `update` it alone, and mounts the pod's service-account token. `false` renders none of it. |
-| `license.hubUrl` | — | The Hub's address; empty = `https://hub.itsmcloud.lt`. https only. The pod needs outbound HTTPS to it. |
 | `replicaCount` | `1` | Refused above 1 — sessions are in memory. `0` parks the release. |
 | `rolloutToken` | — | Change it to roll the pod after rotating a key in `existingSecret`; the key is read once, at startup. |
 | `networkPolicy.enabled` | `auto` | `auto` = on exactly when `authMode=none`. Admits `networkPolicy.from`, by default pods in the release namespace. |

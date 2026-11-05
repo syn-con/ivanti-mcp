@@ -328,11 +328,6 @@ export function validateConfig(config: Config, provided: ReadonlySet<string> = n
       'The signing keys that decide which tokens this server accepts would be fetched over a ' +
         'connection anyone on the path can rewrite.',
     ],
-    [
-      'LICENSE_HUB_URL',
-      'The licence key travels with every heartbeat, and the keys that decide whether this ' +
-        'server is licensed would be fetched over a connection anyone on the path can rewrite.',
-    ],
   ];
   for (const [setting, risk] of secured) {
     const value = config[setting];

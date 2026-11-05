@@ -134,8 +134,6 @@ license:
   # release to another name or namespace. A change is a new machine to the Hub,
   # and takes a new licence seat.
   installId: ""
-  # The Hub's address. Empty: the server's built-in https://hub.itsmcloud.lt.
-  hubUrl: ""
   # Keep the last licence token the Hub signed in a Secret of its own
   # (<release>-licence-state), so a pod restarted while the Hub is unreachable
   # still opens on its 30 days of grace. Needs a Role that may get and update

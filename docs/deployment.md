@@ -250,7 +250,7 @@ the failure to `helm install`:
 | `metrics.token` with `secrets.create` and a `secrets.metricsToken` that is empty, under 32 characters, or equal to another chart secret | the server refuses it — whatever scrapes holds it |
 | `metrics.serviceMonitor.enabled` while `metrics.enabled` is false | it would scrape a port nothing serves |
 | `secrets.create` without `secrets.licenceKey` | the server cannot start without a licence key |
-| `license.installId` that is not a UUID, or `license.hubUrl` that is not https | the server refuses both; the licence key travels with every heartbeat |
+| `license.installId` that is not a UUID | the Hub would see a different machine on every render |
 
 `node scripts/check-chart.mjs` lints the chart and renders the defaults and every guard — a refusal
 that renders fails it, and so does a valid configuration that does not. It is in the shared check
@@ -333,7 +333,7 @@ server logs as a clean `SIGINT` shutdown; and a restart about 10 s after the pro
 ## Licensing
 
 Every deployment needs a **Synergy Hub licence key** (`LICENSE_KEY`, or `LICENSE_KEY_FILE`), and
-**outbound HTTPS to the Hub**, `https://hub.itsmcloud.lt` unless `LICENSE_HUB_URL` says otherwise.
+**outbound HTTPS to the Hub** at `https://hub.itsmcloud.lt`, an address built into the server.
 There is no offline activation. Without a key the server exits 78. With one, it starts, activates
 in the background, and confirms the licence every 4 minutes. The design is in
 [§9f](./initial-design.md#9f-licensing-through-the-synergy-hub-decided-2026-11-04).

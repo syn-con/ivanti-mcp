@@ -205,8 +205,6 @@ const CASES = [
     has: ['automountServiceAccountToken: false'], lacks: ['LICENSE_STATE_SECRET', 'kind: Role', 'licence-state'] },
   { name: 'a long release name keeps the licence-state suffix', set: { fullnameOverride: 'x'.repeat(70) },
     has: [`name: ${'x'.repeat(49)}-licence-state`] },
-  { name: 'a Hub address over https', set: { 'license.hubUrl': 'https://hub.example.com' }, has: ['LICENSE_HUB_URL'] },
-  { name: 'a Hub address over plain http', set: { 'license.hubUrl': 'http://hub.example.com' }, refuses: /license\.hubUrl must be https/ },
 ];
 
 function args(set = {}, setRaw = {}) {
