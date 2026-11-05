@@ -1,7 +1,7 @@
 name: Scan published image
 
-# New CVEs are published against images that have already shipped. CI and the
-# release gate scan an image when it is built; this scans what people are
+# New CVEs are published against images that have already shipped. The
+# release gate scans an image when it is built; this scans what people are
 # actually pulling, every week, and turns a fixable critical or high into an
 # issue rather than a red run nobody opens. The scan of 2026-09-30 that prompted
 # it came from outside the repository.

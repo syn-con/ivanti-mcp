@@ -172,7 +172,9 @@ accepted a signature from **any** workflow in the repository, on **any** branch 
 nobody reviewed.
 
 Tags: `1.2.3`, `1.2`, `1` and `latest` for a release; a prerelease publishes its exact version only.
-CI builds every commit for both architectures and pushes nothing. Pin a digest in production.
+Docker builds run only during Release: the Gate builds and scans amd64, then Publish builds
+amd64 and arm64, publishes, and saves the cache for the next release. CI validates code, chart,
+Dockerfile/context and tarball without building an image. Pin a digest in production.
 
 Four things that bite, all recorded in `notes.md`:
 
@@ -433,6 +435,10 @@ first step) reads `package.json`, refuses a version already released, runs the s
 publishes, and **creates the tag last**, at the commit it built and signed — so a run that dies
 halfway retries by pressing the button again instead of leaving an orphan tag.
 
+Release notes start with the matching version's section in `CHANGELOG.md`, when present, followed
+by GitHub's generated list of all PRs since the previous release and the deployment instructions.
+Write the upgrade guidance and user-visible changes in that changelog section before shipping.
+
 It is **two jobs**. *Gate* runs the checks — every devDependency, installed and executed — with
 `contents: read` and nothing else, and builds the tarball. *Publish* holds the write token, the OIDC
 token that signs as `release.yml@refs/heads/main`, and the Docker Hub credentials, installs no npm
@@ -463,7 +469,7 @@ the chart's lint and guard renders.
 (the version in a comment beside it), the base images by digest, npm packages by the lockfile.
 `.github/dependabot.yml` proposes updates weekly — npm, the Dockerfile's images and the actions,
 grouped, with a cooldown of a few days after a version is published — and each goes through
-`Checks` and `Image` like any other change. A new Node or TypeScript major, and anything that
+`Checks` like any other change. A new Node or TypeScript major, and anything that
 moves `@modelcontextprotocol/sdk`, arrives on its own.
 
 **One step is CI's alone: the manifest size.** On a pull request, `ci.yml` measures the manifest
@@ -472,8 +478,12 @@ summary, with a one-line annotation. It informs and never blocks — `continue-o
 not in the shared list because a release has no base to compare with. See
 [`usage.md`](./usage.md).
 
-**`main` is protected, admins included.** A PR is required; `Checks` and `Image` must be green; the
-branch must be up to date; force-pushes and deletions are refused; there is no bypass.
+**`main` is protected, admins included.** Every change requires an up-to-date PR with `Checks`
+green and one approving review. New reviewable commits dismiss earlier approvals. Only
+`tyrunasj` may bypass the review requirement when merging a PR; this does not permit direct
+pushes or bypassing CI. Unresolved review conversations still block merging, and force-pushes
+and branch deletion remain forbidden. The [review ruleset](https://github.com/syn-con/ivanti-mcp/rules/26623181)
+adds the approval requirement alongside the existing branch protection.
 
 Repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (Read/Write on `tyrunas/ivanti-mcp`).
 
