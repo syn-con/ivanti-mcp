@@ -2,7 +2,33 @@
 
 What changed for someone running the server, newest first. **Upgrading** says what to check
 before moving to a release; a release with nothing under it upgrades by swapping the version. The
-full list of merged changes is on each [GitHub release](https://github.com/tyrunasj/ivanti-mcp-standalone/releases).
+full list of merged changes is on each [GitHub release](https://github.com/syn-con/ivanti-mcp/releases).
+
+## 0.3.9 — 2026-10-27
+
+Found by reading a model file two onboarding requests.
+
+- **A mistyped parameter id is traced back.** When a submit's key is one or two characters from a
+  parameter's RecId, the refusal says which parameter it was probably meant for.
+- **A filed request says its status is not final.** `submit_service_request` returns a
+  `statusNote`: workflows and escalations run after the answer, and one request on the tenant was
+  cancelled by the escalation engine an hour after it was filed.
+- **Look-alike offerings are flagged.** `list_request_offerings` returns `lookAlikes` when
+  offerings share a description, so a model asks which one instead of choosing.
+
+## 0.3.8 — 2026-10-27
+
+- **`submit_service_request` accepts a parameter Name as an answer key.** The form evaluator takes
+  names and a submit takes RecIds, so a model that carried names across was refused with "Required
+  parameter Department is not defined". A name is now settled to its RecId (reported as
+  `keysSettled`), and a key that is neither is refused by name, before anything is sent, with the
+  offering's parameter names.
+- **`get_service_request_parameter_options` refuses an id that matches no parameter.** A model
+  retyping a 32-character id dropped two characters, got an empty list with a note that the
+  tenant's list "holds no rows", and told the person the form was broken. An id that is not 32 hex
+  characters, or that no parameter has, is now refused by name instead of answered as empty.
+- **The form's parameter RecId was read from the wrong field**, so answers keyed by RecId to
+  `get_service_request_parameters` were reported as unknown answers. It now reads `strRecId`.
 
 ## 0.3.7 — 2026-10-25
 
@@ -206,4 +232,4 @@ NetworkPolicy and a `rolloutToken`.
 
 ## Earlier
 
-See the [GitHub releases](https://github.com/tyrunasj/ivanti-mcp-standalone/releases).
+See the [GitHub releases](https://github.com/syn-con/ivanti-mcp/releases).

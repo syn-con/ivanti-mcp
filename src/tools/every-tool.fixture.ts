@@ -94,7 +94,7 @@ export const ARGUMENTS: Record<string, Record<string, unknown>> = {
   fulltext_search_object: { object: 'Incidents', query: 'printer' },
   list_assigned_work: { person: 'JSmith' },
   get_service_request_parameters: { templateId: 't1' },
-  get_service_request_parameter_options: { parameterId: 'p1' },
+  get_service_request_parameter_options: { parameterId: '6D4B277C64354540AF1B6C5E96E8691A' },
   get_attachment_details: { attachmentId: 'a1' },
   search: { query: 'printer' },
   fetch: { id: 'incidents:abc' },

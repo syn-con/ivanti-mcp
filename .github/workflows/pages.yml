@@ -1,6 +1,6 @@
 name: Pages
 
-# Publishes the Handbook as https://tyrunasj.github.io/ivanti-mcp-standalone/.
+# Publishes the Handbook as https://syn-con.github.io/ivanti-mcp/.
 # GitHub's file view shows an .html file as source, and the Handbook is one
 # self-contained page — no relative links, no local assets — so it is served
 # alone, as index.html.

@@ -110,7 +110,25 @@ export function createListRequestOfferingsTool(deps: IvantiToolDeps): ToolDefini
         const offerings = result.offerings.slice(0, MAX_OFFERINGS);
         const hasMore = result.offerings.length > offerings.length;
 
+        // Two offerings with one description are look-alikes, and choosing between them for the
+        // person sent a request down the one that was later cancelled. They choose.
+        const byDescription = new Map<string, string[]>();
+        for (const offering of offerings) {
+          const description = (offering.description ?? '').trim().toLowerCase();
+          if (description === '') continue;
+          byDescription.set(description, [...(byDescription.get(description) ?? []), offering.name]);
+        }
+        const lookAlikes = [...byDescription.values()].filter((names) => names.length > 1);
+
         return jsonResult({
+          ...(lookAlikes.length === 0
+            ? {}
+            : {
+                lookAlikes,
+                lookAlikesNote:
+                  'Offerings in each group share one description. Do not pick for the person: ask ' +
+                  'which they want, and say what tells them apart if anything does.',
+              }),
           returned: offerings.length,
           total: result.offerings.length,
           hasMore,

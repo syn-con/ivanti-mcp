@@ -3,12 +3,15 @@
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { describe, expect, it, vi } from 'vitest';
+import { IvantiApiError } from '../../ivanti/http/errors.js';
 import { connectionFixture } from '../../ivanti/connection.fixture.js';
 import { OPEN_GATE } from '../shared/object-gate.js';
 import { OPEN_ACTIONS } from '../shared/action-gate.js';
 import type { Logger } from '../../logger.js';
 import { createGetServiceRequestParameterOptionsTool } from './get-service-request-parameter-options.js';
 import { createGetServiceRequestParametersTool } from './get-service-request-parameters.js';
+
+const PID = '6D4B277C64354540AF1B6C5E96E8691A';
 
 const logger = (): Logger => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() });
 
@@ -79,19 +82,19 @@ describe('get_service_request_parameter_options', () => {
       ],
     });
 
-    const result = body(await options.handler({ parameterId: 'p1' }));
+    const result = body(await options.handler({ parameterId: PID }));
 
     expect(result.options).toEqual([
       { recId: 'r1', value: 'Accounting', label: 'Accounting' },
       { recId: 'r2', value: 'IT', label: 'IT' },
     ]);
-    expect(urls[0]).toContain('/api/rest/ServiceRequest/p1/ValidationList');
+    expect(urls[0]).toContain(`/api/rest/ServiceRequest/${PID}/ValidationList`);
   });
 
   it('explains an empty list rather than presenting it as complete', async () => {
-    const { options } = tools({ ValidationList: [] });
+    const { options } = tools({ ValidationList: [], servicereqtemplateparams: { RecId: PID } });
 
-    const result = body(await options.handler({ parameterId: 'p1' }));
+    const result = body(await options.handler({ parameterId: PID }));
 
     expect(result.returned).toBe(0);
     expect(String(result.note)).toContain('constrained by another answer');
@@ -101,7 +104,7 @@ describe('get_service_request_parameter_options', () => {
     const rows = Array.from({ length: 250 }, (_, n) => [`r${String(n)}`, `v${String(n)}`, `L${String(n)}`]);
     const { options } = tools({ ValidationList: rows });
 
-    const result = body(await options.handler({ parameterId: 'p1' }));
+    const result = body(await options.handler({ parameterId: PID }));
 
     expect(result.returned).toBe(100);
     expect(result).toMatchObject({ total: 250, hasMore: true });
@@ -111,20 +114,42 @@ describe('get_service_request_parameter_options', () => {
   it('does not report a cut-off on a list that fits', async () => {
     const { options } = tools({ ValidationList: [['r1', 'A', 'A']] });
 
-    expect(body(await options.handler({ parameterId: 'p1' }))).not.toHaveProperty('hasMore');
+    expect(body(await options.handler({ parameterId: PID }))).not.toHaveProperty('hasMore');
   });
 
   it('tells a person missing under their parent that fixing their record is an administrator job', async () => {
-    const { options } = tools({ ValidationList: [] });
+    const { options } = tools({ ValidationList: [], servicereqtemplateparams: { RecId: PID } });
 
     const result = body(
       await options.handler({
-        parameterId: 'p1',
+        parameterId: PID,
         constraints: [{ queryFieldName: 'Department', value: 'Sales' }],
       }),
     );
 
     expect(String(result['scopeNote'])).toContain('administrator');
     expect(String(result['scopeNote'])).toContain('do not edit the record');
+  });
+
+  it('refuses an id that is not 32 hex characters instead of answering an empty list', async () => {
+    const { options, urls } = tools({});
+
+    const result = await options.handler({ parameterId: '6D4B277C643540AF1B6C5E96E8691A' });
+
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('30 characters');
+    expect(urls).toEqual([]);
+  });
+
+  it('says so when a well-formed id matches no parameter, rather than presenting an empty list', async () => {
+    const { options } = tools({
+      ValidationList: [],
+      'GET servicereqtemplateparams': new IvantiApiError({ status: 400, method: 'GET', url: 'x' }),
+    });
+
+    const result = await options.handler({ parameterId: PID });
+
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('No parameter has the RecId');
   });
 });

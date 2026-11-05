@@ -963,7 +963,7 @@ judgement call (a rotated key fixed in place would then need a manual restart). 
 ### 33. In-flight accounting conflates the SSE stream with a running request, and the sweep ignores it
 
 `src/server/http/session-store.ts:172`, `session-manager.ts:152`/`:165`/`:218`, `mcp-handler.ts:118`.
-Not run; the 1,511 ms GET-stream experiment is the finder's. `inFlight` counts the standalone GET
+Not run; the 1,511 ms GET-stream experiment is the finder's. `inFlight` counts the dedicated GET
 stream (held for the client's life) and a running POST alike, so subject eviction's "prefer one doing
 nothing" cannot tell attached-idle from mid-write, and `sweep()` closes by `lastSeen` alone. The
 verifier's read: scenario (b), the TTL closing a stream-attached, request-less session, is largely

@@ -3,7 +3,8 @@
 
 import { z } from 'zod';
 import type { IvantiToolDeps } from '../shared/deps.js';
-import { jsonResult } from '../shared/result.js';
+import { IvantiApiError } from '../../ivanti/http/errors.js';
+import { errorResult, jsonResult } from '../shared/result.js';
 import { ObjectNotAllowedError } from '../shared/object-gate.js';
 import { runTool } from '../shared/run-tool.js';
 import { defineTool, type ToolDefinition } from '../tool-definition.js';
@@ -11,6 +12,28 @@ import { transportFor } from '../shared/transport-for.js';
 
 /** The most options one answer carries; the rest are reached through `search`. */
 const MAX_OPTIONS = 100;
+
+const PARAMETER_OBJECT = 'servicereqtemplateparams';
+const RECID = /^[0-9A-F]{32}$/i;
+
+/**
+ * Whether Ivanti knows a parameter by this id. Only asked when a list came back empty: Ivanti
+ * answers a well-formed id that matches nothing with an empty list, which reads exactly like a
+ * parameter whose list holds no rows. A read that fails for any other reason proves nothing, so
+ * it counts as "exists" and the empty answer stands.
+ */
+async function parameterExists(
+  transport: ReturnType<typeof transportFor>,
+  parameterId: string,
+): Promise<boolean> {
+  try {
+    const row = await transport.request<unknown>(transport.routes.record(PARAMETER_OBJECT, parameterId));
+    return row !== undefined && row !== null;
+  } catch (error: unknown) {
+    // Measured: Ivanti answers a record id it does not hold with 400, not 404.
+    return !(error instanceof IvantiApiError && (error.status === 400 || error.status === 404));
+  }
+}
 
 /** Each option arrives as a row of cells: `[recId, value, label?]`. */
 function toOption(row: unknown): { recId: string; value: string; label: string } | undefined {
@@ -50,7 +73,7 @@ export function createGetServiceRequestParameterOptionsTool(deps: IvantiToolDeps
       openWorldHint: true,
     },
     inputSchema: {
-      parameterId: z.string().describe('RecId of the parameter, from get_service_request_parameters.'),
+      parameterId: z.string().describe('RecId of the parameter (32 hex characters), copied exactly from get_service_request_parameters.'),
       search: z
         .string()
         .optional()
@@ -81,6 +104,16 @@ export function createGetServiceRequestParameterOptionsTool(deps: IvantiToolDeps
         // These exist to serve service requests; where that object is gated away, so are they.
         if (!deps.gate.allows('ServiceReq')) {
           throw new ObjectNotAllowedError('ServiceReq', deps.gate.allowed);
+        }
+
+        // A model copying a 32-character id by hand drops characters, and the answer to a mangled
+        // id is an empty list — which it then explained as a tenant whose form has no options.
+        if (!RECID.test(args.parameterId)) {
+          return errorResult(
+            `'${args.parameterId}' is ${String(args.parameterId.length)} characters, and a parameter ` +
+              'RecId is 32 hex characters, so it is not one. Copy the `RecId` from ' +
+              'get_service_request_parameters exactly rather than retyping it.',
+          );
         }
 
         const transport = transportFor(deps.connection.transport, context);
@@ -114,6 +147,14 @@ export function createGetServiceRequestParameterOptionsTool(deps: IvantiToolDeps
         // A requester list under one department is 200 rows (~25 KB), and a caller that only
         // needed to know whether one person is on it read all of them. `search` narrows by label.
         const options = all.slice(0, MAX_OPTIONS);
+
+        if (options.length === 0 && !(await parameterExists(transport, args.parameterId))) {
+          return errorResult(
+            `No parameter has the RecId '${args.parameterId}', so there is no list to be empty. ` +
+              'Copy the `RecId` from get_service_request_parameters exactly — one character ' +
+              'out is enough to match nothing.',
+          );
+        }
 
         return jsonResult({
           parameterId: args.parameterId,

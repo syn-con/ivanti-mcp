@@ -1,17 +1,19 @@
 # Ivanti MCP
 
-A standalone [MCP](https://modelcontextprotocol.io) server for **Ivanti Neurons for ITSM** — reading
+An [MCP](https://modelcontextprotocol.io) server for **Ivanti Neurons for ITSM** — reading
 records, filing tickets, running the tenant's own quick actions, handling approvals — over stdio, or
 over HTTP with no authentication, a bearer token or OAuth. **41 tools in `full` mode, 34 in
 `enduser`**, plus six reference documents served as MCP resources. Ships as a container image, a
 Helm chart and a tarball, all built from one commit.
+
+Source and releases: [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp).
 
 The server signs in to Ivanti as **one API user**. `act_as` is how a conversation says who it is
 helping, and every other tool refuses until it has. Given a ConfigDB key, `act_as` opens a real
 Ivanti session *as* that person, so Ivanti applies their own access.
 
 **Running a published build?** Start with the
-**[Handbook](https://tyrunasj.github.io/ivanti-mcp-standalone/)** — every setting, every tool, and
+**[Handbook](https://syn-con.github.io/ivanti-mcp/)** — every setting, every tool, and
 a configurator that writes the `.env`, `docker run`, compose file, Helm values and systemd unit.
 Its source is [`docs/handbook.html`](docs/handbook.html); the `Pages` workflow publishes it from
 `main`.
@@ -53,7 +55,7 @@ tests — the loop is in [`docs/development.md`](docs/development.md#testing-aga
 
 | | |
 |---|---|
-| [Handbook](https://tyrunasj.github.io/ivanti-mcp-standalone/) ([source](docs/handbook.html)) | interactive reference and configurator; start here to run it |
+| [Handbook](https://syn-con.github.io/ivanti-mcp/) ([source](docs/handbook.html)) | interactive reference and configurator; start here to run it |
 | [`examples/env/`](examples/env) | working configurations — CI proves they load |
 | [`docs/configuration.md`](docs/configuration.md) | configuring against a real IdP, with a symptom → cause table |
 | [`docs/deployment.md`](docs/deployment.md) | the four shapes, the chart's guards, the image build, releasing |

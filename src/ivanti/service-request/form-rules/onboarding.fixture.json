@@ -4,6 +4,7 @@
    "lstParameters": [
     {
      "strExistingRecId": "DF9E2D2AA0794C2BA8C42BED1B06DF11",
+     "strRecId": "DF9E2D2AA0794C2BA8C42BED1B06DF11",
      "strName": "FirstName",
      "strType": "text",
      "nSequenceNum": 0,
@@ -33,6 +34,7 @@
     },
     {
      "strExistingRecId": "E674689D9FA7431FBB7B3F554C3C54ED",
+     "strRecId": "E674689D9FA7431FBB7B3F554C3C54ED",
      "strName": "Department",
      "strType": "combo",
      "nSequenceNum": 0,
@@ -62,6 +64,7 @@
     },
     {
      "strExistingRecId": "F5662613F08641CF93B94A562BB0B26E",
+     "strRecId": "F5662613F08641CF93B94A562BB0B26E",
      "strName": "EmploymentType_1",
      "strType": "combo",
      "nSequenceNum": 0,
@@ -105,6 +108,7 @@
     },
     {
      "strExistingRecId": "8E0165207F9145ACAEC24E6EDEA9EE71",
+     "strRecId": "8E0165207F9145ACAEC24E6EDEA9EE71",
      "strName": "StartDate",
      "strType": "date",
      "nSequenceNum": 0,
@@ -134,6 +138,7 @@
     },
     {
      "strExistingRecId": "DEEE35EA5DEE46AC8D385E7A7FD9821D",
+     "strRecId": "DEEE35EA5DEE46AC8D385E7A7FD9821D",
      "strName": "ComputerRequired",
      "strType": "checkbox",
      "nSequenceNum": 0,
@@ -149,6 +154,7 @@
     },
     {
      "strExistingRecId": "BC40017B5DE149F4B2DD4416A356BD70",
+     "strRecId": "BC40017B5DE149F4B2DD4416A356BD70",
      "strName": "ComputerType",
      "strType": "combo",
      "nSequenceNum": 0,
@@ -228,6 +234,7 @@
     },
     {
      "strExistingRecId": "0A12675B08B74662BE6D6947AB0F96AB",
+     "strRecId": "0A12675B08B74662BE6D6947AB0F96AB",
      "strName": "UltraPortable",
      "strType": "checkbox",
      "nSequenceNum": 0,
@@ -330,6 +337,7 @@
     },
     {
      "strExistingRecId": "F044F629E9654F2087509D58A2A3BCC1",
+     "strRecId": "F044F629E9654F2087509D58A2A3BCC1",
      "strName": "PortReplicator",
      "strType": "checkbox",
      "nSequenceNum": 0,
@@ -432,6 +440,7 @@
     },
     {
      "strExistingRecId": "B202ACE3DA7044FEB22861B319AC8C01",
+     "strRecId": "B202ACE3DA7044FEB22861B319AC8C01",
      "strName": "PrimaryMonitor",
      "strType": "combo",
      "nSequenceNum": 0,
@@ -534,6 +543,7 @@
     },
     {
      "strExistingRecId": "A7E1F3DCF8F84E5C966321E6C5A3DA97",
+     "strRecId": "A7E1F3DCF8F84E5C966321E6C5A3DA97",
      "strName": "SecondaryMonitor",
      "strType": "checkbox",
      "nSequenceNum": 0,
@@ -581,6 +591,7 @@
     },
     {
      "strExistingRecId": "54D80C8755354E368048EE6BEA5D1151",
+     "strRecId": "54D80C8755354E368048EE6BEA5D1151",
      "strName": "2ndMonitor",
      "strType": "combo",
      "nSequenceNum": 0,
@@ -660,6 +671,7 @@
     },
     {
      "strExistingRecId": "3603ACD37716431B80611D9DAC447A6F",
+     "strRecId": "3603ACD37716431B80611D9DAC447A6F",
      "strName": "MobilePhoneRequired",
      "strType": "checkbox",
      "nSequenceNum": 0,
@@ -675,6 +687,7 @@
     },
     {
      "strExistingRecId": "9EA826C8AB83429AA5E1E8B95B43C7F1",
+     "strRecId": "9EA826C8AB83429AA5E1E8B95B43C7F1",
      "strName": "MobilePhone",
      "strType": "combo",
      "nSequenceNum": 0,

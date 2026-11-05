@@ -194,7 +194,7 @@ export function createGetServiceRequestParametersTool(deps: IvantiToolDeps): Too
         )
         .optional()
         .describe(
-          'Answers so far, by parameter Name. Returns only `evaluation` (needs `subscriptionId`, ' +
+          'Answers so far, by parameter Name or RecId — submit_service_request takes RecIds. Returns only `evaluation` (needs `subscriptionId`, ' +
             'not `templateId`): what is shown, required, missing, and how to fetch each filtered ' +
             'list. Call again after each answer.',
         ),

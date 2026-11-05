@@ -82,7 +82,9 @@ export function parseFormPackage(payload: unknown): FormParameter[] {
       const constraints = Array.isArray(raw['validationConstraints'])
         ? (raw['validationConstraints'] as ParameterConstraint[])
         : parseConstraints(raw['strValidationConstraints']);
-      const recId = text(raw['strExistingRecId']);
+      // `strExistingRecId` is NOT this: it is the stored answer's id on an existing request. The
+      // template parameter's own RecId — what a submit keys its answers by — is `strRecId`.
+      const recId = text(raw['strRecId']) ?? text(raw['RecId']);
       const listId = text(raw['strValidationListRecId']);
 
       const visibility = toRule(raw['visibilityExpression']);

@@ -2,6 +2,8 @@
 // Copyright (c) 2026 SYNERGY. All rights reserved.
 
 import { z } from 'zod';
+import { settleAnswerKeys } from '../../ivanti/service-request/answer-keys.js';
+import { readFormPackage } from '../../ivanti/service-request/form-rules/form-package.js';
 import { stageAttachment, type StagedAttachment } from '../../ivanti/service-request/stage-attachment.js';
 import {
   buildSubmitPayload,
@@ -89,7 +91,7 @@ export function createSubmitServiceRequestTool(deps: IvantiToolDeps): ToolDefini
       'ORDER: list_request_offerings for the ids, get_service_request_parameters for what the ' +
       'offering asks, get_service_request_parameter_options for any `combo`, then this. ' +
       '`subscriptionId` and `templateId` must come from the SAME offering.\n\n' +
-      'ANSWERS ARE KEYED BY PARAMETER RecId. A `combo` parameter must be answered as ' +
+      'ANSWERS ARE KEYED BY PARAMETER RecId (a Name is settled to it). A `combo` parameter must be answered as ' +
       '`{value, recId}` — a bare value is refused with "validation list\'s value was submitted ' +
       'without it\'s identifier". A checkbox takes a real boolean and BOTH `true` and `false` ' +
       'store — the encoding is what is fussy: `True`, `1` and `yes` are silently ignored and ' +
@@ -121,7 +123,8 @@ export function createSubmitServiceRequestTool(deps: IvantiToolDeps): ToolDefini
       answers: z
         .record(z.string(), ANSWER)
         .describe(
-          "Keyed by the parameter's RecId from get_service_request_parameters. A combo is " +
+          "Keyed by the parameter's RecId from get_service_request_parameters (its Name also " +
+            'works). A combo is ' +
             '`{value, recId}`; everything else is a plain value.',
         ),
       subject: z
@@ -195,7 +198,29 @@ export function createSubmitServiceRequestTool(deps: IvantiToolDeps): ToolDefini
           );
         }
 
-        const answers = args.answers as Record<string, ParameterAnswer>;
+        // The evaluator takes names and this takes RecIds; settle the one into the other, and refuse
+        // by name a key that is neither, before Ivanti reports "Required parameter X is not defined".
+        // Not being able to read the form is not a reason to refuse: the answers go as given.
+        const given = args.answers as Record<string, ParameterAnswer>;
+        // The time zone only resolves date defaults, which the keys do not depend on.
+        const form = await readFormPackage(connection.transport, args.subscriptionId, 0).catch(() => []);
+        const settled = settleAnswerKeys(form, given);
+        if (settled !== undefined && settled.unknown.length > 0) {
+          return errorResult(
+            `Nothing was submitted: ${settled.unknown.map((key) => `'${key}'`).join(', ')} ` +
+              'match no parameter of this offering, by RecId or by Name. ' +
+              Object.entries(settled.nearMisses)
+                .map(([key, near]) => `'${key}' is one or two characters from ${near.recId} (${near.name}) — a mistyped id? `)
+                .join('') +
+              'Answers are keyed by ' +
+              "parameter RecId (from get_service_request_parameters with the offering's " +
+              '`templateId`). Parameters here: ' +
+              form.map((parameter) => parameter.name).join(', ') +
+              '.',
+          );
+        }
+        const answers = settled?.answers ?? given;
+        const renamedKeys = settled?.renamed ?? {};
         const sendsDate = Object.values(answers).some((answer) => {
           const raw = isChosenOption(answer) ? answer.value : answer;
           return typeof raw === 'string' && ISO_DATETIME.test(raw);
@@ -389,6 +414,13 @@ export function createSubmitServiceRequestTool(deps: IvantiToolDeps): ToolDefini
             ? { createdBy: filed['CreatedBy'], createdByNote: 'who Ivanti recorded as filing it' }
             : {}),
           ...subjectReport,
+          // Read just now, and Ivanti's workflows and escalations run after this answer: one
+          // request on this tenant was cancelled by the escalation engine an hour after it was
+          // filed, and a model that checked at once called the re-filed one safe.
+          statusNote:
+            'The request has just been filed. Workflows and escalations can still change its ' +
+            'status afterwards, so give any status with the time it was read and do not call the ' +
+            'request settled.',
           answersSent: submitted.parametersSent,
           answersOnRequest: submitted.parametersOnRequest,
           ...attachmentReport(staged, onRequest),
@@ -402,6 +434,7 @@ export function createSubmitServiceRequestTool(deps: IvantiToolDeps): ToolDefini
               }
             : {}),
           ...(offsetNote === undefined ? {} : { offsetWarning: offsetNote }),
+          ...(Object.keys(renamedKeys).length === 0 ? {} : { keysSettled: renamedKeys }),
           ...(verifyFailed !== undefined
             ? {
                 // Three states, not two. The request was filed; whether it stored correctly is
