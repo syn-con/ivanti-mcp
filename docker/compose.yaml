@@ -32,9 +32,13 @@ services:
     # no metrics listener and the server ignores it. On without METRICS_TOKEN, the
     # server warns that metrics listen beyond this machine — here the machine is
     # the container, and who reaches the port is still decided by `ports:` below.
+    #
+    # LICENSE_STATE_DIR is where the last licence the Synergy Hub confirmed is kept,
+    # on the volume below, so a restart during a Hub outage keeps its 30 days.
     environment:
       MCP_BIND: 0.0.0.0
       METRICS_BIND: 0.0.0.0
+      LICENSE_STATE_DIR: /var/lib/ivanti-mcp
 
     # PUBLISHED ON THE HOST'S LOOPBACK ONLY, by default. A bare `<port>:<port>`
     # publishes on every host interface, and Docker writes its own iptables rules
@@ -86,7 +90,10 @@ services:
       start_period: 10s
       retries: 3
 
-    # Nothing is written to disk, so nothing needs to be writable.
+    # The licence state is the one thing written, to its own volume; the image owns
+    # /var/lib/ivanti-mcp as its runtime user, which the volume takes on first use.
+    volumes:
+      - licence-state:/var/lib/ivanti-mcp
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -96,3 +103,6 @@ services:
 # secrets:
 #   ivanti_api_key:
 #     file: ../secrets/ivanti-api-key
+
+volumes:
+  licence-state:

@@ -67,3 +67,28 @@ describe('createGetVersionTool', () => {
     expect(JSON.stringify(asserted)).not.toContain('jsmith');
   });
 });
+
+describe('the licence in get_version', () => {
+  const base = { serverName: 'ivanti-mcp', serverVersion: '0.4.0', sdkVersion: '1.31.0' };
+
+  it('says nothing about a licence when none is checked', () => {
+    expect(buildVersionInfo(base)).not.toHaveProperty('licence');
+  });
+
+  it('reports an open licence and its end date', () => {
+    const info = buildVersionInfo({ ...base, licence: { view: () => ({ status: 'open', validUntil: '2027-03-31' }) } });
+
+    expect(info.licence).toEqual({ status: 'open', validUntil: '2027-03-31' });
+  });
+
+  it('reports why it is closed, or when its grace runs out', () => {
+    const closed = buildVersionInfo({ ...base, licence: { view: () => ({ status: 'closed', reason: 'no seat' }) } });
+    const grace = buildVersionInfo({
+      ...base,
+      licence: { view: () => ({ status: 'grace', reason: 'Hub unreachable', graceEndsAt: Date.UTC(2026, 11, 4) }) },
+    });
+
+    expect(closed.licence).toEqual({ status: 'closed', reason: 'no seat' });
+    expect(grace.licence).toEqual({ status: 'grace', reason: 'Hub unreachable', graceEndsAt: '2026-12-04T00:00:00.000Z' });
+  });
+});

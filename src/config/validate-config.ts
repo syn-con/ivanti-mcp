@@ -372,6 +372,8 @@ export function validateConfig(config: Config, provided: ReadonlySet<string> = n
   // one toggle is the whole of turning metrics off, which is the safe direction.
   if (config.METRICS_ON) problems.push(...metricsProblems(config));
 
+  problems.push(...licenceProblems(config));
+
   // A write cut off early is the costliest failure there is — it may have been applied — so it
   // must never be the one given less time.
   if (config.IVANTI_WRITE_TIMEOUT_MS < config.IVANTI_TIMEOUT_MS) {
@@ -473,6 +475,43 @@ export function validateConfig(config: Config, provided: ReadonlySet<string> = n
           `employee deployment set MCP_MODE=enduser; otherwise remove ${stray.length === 1 ? 'it' : 'them'}.`,
       );
     }
+  }
+
+  return problems;
+}
+
+/**
+ * The licence settings (design §9f). Every one fails closed: a deployment with no key, or no
+ * stable identity to hold its seat by, is refused at startup rather than discovered later as a
+ * server that refuses every tool for a reason nobody reads.
+ */
+function licenceProblems(config: Config): string[] {
+  const problems: string[] = [];
+
+  if (config.LICENSE_KEY === undefined) {
+    problems.push(
+      'LICENSE_KEY (or LICENSE_KEY_FILE) is required: the Synergy Hub licence key this ' +
+        'installation activates with.',
+    );
+  }
+
+  // Under stdio the config folder is the identity's home, so one can be generated there. Over
+  // HTTP the process is a pod or a container that loses whatever it writes, and a fresh identity
+  // on every start would take a fresh seat on every start.
+  if (isHttpTransport(config) && config.LICENSE_INSTALL_ID === undefined) {
+    problems.push(
+      'LICENSE_INSTALL_ID (or LICENSE_INSTALL_ID_FILE) is required over HTTP: a UUID generated ' +
+        'once for this installation and never changed, or every start takes a new licence seat. ' +
+        'Generate one with `node -e "console.log(crypto.randomUUID())"`; the Helm chart makes ' +
+        'and keeps one itself.',
+    );
+  }
+
+  if (config.LICENSE_STATE_DIR !== undefined && config.LICENSE_STATE_SECRET !== undefined) {
+    problems.push(
+      'LICENSE_STATE_DIR and LICENSE_STATE_SECRET are both set; the last licence token is kept ' +
+        'in one place. Set LICENSE_STATE_SECRET under Kubernetes, LICENSE_STATE_DIR elsewhere.',
+    );
   }
 
   return problems;

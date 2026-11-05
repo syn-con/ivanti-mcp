@@ -48,10 +48,12 @@ Full notes, including the secret-ownership and DNS traps, are in
 | `server.enduser.quickActions` | `[]` | The tenant's own quick-action names an end user may run, on their own open records. Empty means none. |
 | `ivanti.baseUrl` | — | **Required.** Tenant origin; the `/HEAT` prefix is probed. |
 | `ivanti.maxTier` | — | `odata`, `session` or `admin` — caps the server below what the key can do. |
-| `secrets.existingSecret` | — | Keys `ivanti-api-key`, `bearer-token`, `ivanti-central-config-api-key` when `ivanti.configUrl` is set, and `metrics-token` when `metrics.token` is. Mounted `0400`. |
+| `secrets.existingSecret` | — | Keys `ivanti-api-key`, `licence-key` (always: the Synergy Hub licence key), `bearer-token`, `ivanti-central-config-api-key` when `ivanti.configUrl` is set, and `metrics-token` when `metrics.token` is. Mounted `0400`. |
 | `ivanti.configUrl` | — | The ConfigDB tenant. With its key in the secret, `act_as` signs in to Ivanti AS the person and every surface follows them. |
 | `ivanti.impersonationRole` | — | `full` only. Pins the role an impersonated session opens under; refused when the person does not hold it. |
 | `server.enduser.role` | — | The self-service role an impersonated `enduser` session opens under; empty means the server default, `SelfServiceMobile`. |
+| `license.installId` | — | This installation's identity to the Synergy Hub. Empty: derived from the namespace and release name, the same on every upgrade, sync and `helm template`. Set it to keep the seat when moving the release; a change takes a new seat. |
+| `license.keepState` | `true` | Keeps the last licence the Hub confirmed in the `<fullname>-licence-state` Secret, so a restart during a Hub outage keeps its 30 days. Renders that Secret, a Role that may `get` and `update` it alone, and mounts the pod's service-account token. `false` renders none of it. |
 | `replicaCount` | `1` | Refused above 1 — sessions are in memory. `0` parks the release. |
 | `rolloutToken` | — | Change it to roll the pod after rotating a key in `existingSecret`; the key is read once, at startup. |
 | `networkPolicy.enabled` | `auto` | `auto` = on exactly when `authMode=none`. Admits `networkPolicy.from`, by default pods in the release namespace. |

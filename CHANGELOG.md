@@ -4,6 +4,40 @@ What changed for someone running the server, newest first. **Upgrading** says wh
 before moving to a release; a release with nothing under it upgrades by swapping the version. The
 full list of merged changes is on each [GitHub release](https://github.com/syn-con/ivanti-mcp/releases).
 
+## 0.4.0 — unreleased
+
+The server is licensed through the Synergy Hub, as product `ivanti-mcp`.
+
+**Upgrading.** Every deployment now needs a **Synergy Hub licence key**, and outbound HTTPS to
+`https://hub.itsmcloud.lt`. Before moving to 0.4.0:
+
+- **Kubernetes:** add the key `licence-key` to the Secret named by `secrets.existingSecret` (or set
+  `secrets.licenceKey` with `secrets.create`). Without it the pod exits 78. The chart derives the
+  install ID and creates everything else, including a `<release>-licence-state` Secret and a Role
+  that reaches only it, and it turns the pod's service-account token on.
+- **Everywhere else:** set `LICENSE_KEY` or `LICENSE_KEY_FILE`, and over HTTP `LICENSE_INSTALL_ID`,
+  a UUID made once (`node -e "console.log(crypto.randomUUID())"`). Set `LICENSE_STATE_DIR` too, so
+  a restart during a Hub outage keeps working: the image, compose file and systemd unit use
+  `/var/lib/ivanti-mcp`, and compose mounts a volume there.
+- **Under `docker run -i`,** mount `-v ivanti-mcp-licence:/var/lib/ivanti-mcp` with
+  `LICENSE_STATE_DIR=/var/lib/ivanti-mcp`, or set `LICENSE_INSTALL_ID`. Otherwise every run takes
+  a new licence seat.
+
+Changes:
+
+- **Licensed through the Synergy Hub.** The server activates at startup and confirms the licence
+  every 4 minutes. Startup never waits for the Hub.
+- **Unlicensed, it refuses every tool and says why.** It keeps running and opens again as soon as
+  the Hub confirms the licence, with no restart. The reason is in every refusal and in the log.
+- **30 days without the Hub.** While the Hub cannot be reached, it keeps working on the last licence
+  the Hub signed, for 30 days from then. That licence is kept across restarts, in
+  `LICENSE_STATE_DIR` or, under the chart, a Secret. A refusal from the Hub (a revoked key, no free
+  seat) closes it at once.
+- **`get_version` reports the licence:** its status, why, when it ends, and when the 30 days run
+  out.
+- **Two metrics:** `ivanti_mcp_licence_state{state}` and
+  `ivanti_mcp_licence_confirmed_timestamp_seconds`.
+
 ## 0.3.10 — 2026-11-05
 
 Repository migration, refreshed dependencies and a leaner release pipeline. No MCP tool names,

@@ -25,7 +25,7 @@ chart check, Docker only for the image.
 
 ```bash
 pnpm install
-cp .env.example .env      # set IVANTI_BASE_URL and IVANTI_API_KEY
+cp .env.example .env      # set IVANTI_BASE_URL, IVANTI_API_KEY and LICENSE_KEY
 pnpm dev                  # tsx watch; or pnpm build && pnpm start
 ```
 
@@ -76,6 +76,10 @@ it against the live tenant, not only by tests — the loop is in
 | [`LICENSE`](LICENSE) · [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) | the commercial terms, and the components distributed with it |
 
 ## Licence
+
+**Every deployment needs a Synergy Hub licence key** (`LICENSE_KEY`) and outbound HTTPS to the
+Hub; unlicensed, the server starts and refuses its tools, saying why. How to set it up, shape by
+shape: [`docs/deployment.md`](docs/deployment.md#licensing).
 
 Copyright © 2026 SYNERGY. All rights reserved. **This software is licensed, not sold** — see
 [`LICENSE`](LICENSE), which also grants a thirty-day internal evaluation. Third-party components

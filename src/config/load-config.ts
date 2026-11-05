@@ -13,6 +13,9 @@ const SECRET_KEYS = [
   'IVANTI_API_KEY',
   'IVANTI_CENTRAL_CONFIG_API_KEY',
   'METRICS_TOKEN',
+  'LICENSE_KEY',
+  // Not a secret, but the chart keeps it in one, so it arrives the same way.
+  'LICENSE_INSTALL_ID',
 ] as const;
 
 export class ConfigError extends Error {

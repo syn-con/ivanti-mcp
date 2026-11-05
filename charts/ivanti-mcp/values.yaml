@@ -109,7 +109,8 @@ secrets:
   # Recommended. Keys: ivanti-api-key, bearer-token (only for authMode=bearer),
   # ivanti-central-config-api-key (only with ivanti.configUrl — NOT the tenant key:
   # it comes from the ConfigDB tenant's CentralConfigApiKey group), metrics-token
-  # (only with metrics.token — a secret of its own, never one of the others).
+  # (only with metrics.token — a secret of its own, never one of the others),
+  # licence-key (always: the Synergy Hub licence key).
   existingSecret: ""
   # Development only — puts the values in the release, and therefore in Helm history.
   create: false
@@ -119,7 +120,27 @@ secrets:
   # The scrape token, with metrics.token. At least 32 characters, and none of the
   # keys above: whatever scrapes holds it, so it must reach nothing but the metrics.
   metricsToken: ""
+  # The Synergy Hub licence key. Required.
+  licenceKey: ""
   mountPath: /run/secrets
+
+# Licensing through the Synergy Hub (design §9f). The server activates at
+# startup and renews every 4 minutes; unlicensed, it starts but refuses every
+# tool except get_version. The pod needs outbound HTTPS to the Hub.
+license:
+  # This installation's identity to the Hub, a UUID. Empty: derived from the
+  # namespace and release name, so it stays the same across upgrades, Argo CD
+  # syncs and `helm template` alike. Set it to keep the seat when moving the
+  # release to another name or namespace. A change is a new machine to the Hub,
+  # and takes a new licence seat.
+  installId: ""
+  # Keep the last licence token the Hub signed in a Secret of its own
+  # (<release>-licence-state), so a pod restarted while the Hub is unreachable
+  # still opens on its 30 days of grace. Needs a Role that may get and update
+  # that one Secret, and the pod's service-account token mounted; the chart
+  # creates both. false: no Secret, no Role, no token — and a restart during a
+  # Hub outage starts unlicensed until the Hub answers.
+  keepState: true
 
 # The tenant hostname must resolve INSIDE the pod, which is a different question
 # from whether it resolves on your workstation.

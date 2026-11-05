@@ -529,6 +529,16 @@ is served, is in [`deployment.md`](./deployment.md) and the Handbook's *Watching
 
 ---
 
+## The licence
+
+Every configuration also needs **`LICENSE_KEY`** (or `LICENSE_KEY_FILE`), the Synergy Hub licence
+key, and over HTTP **`LICENSE_INSTALL_ID`**, a UUID made once for the installation and never
+changed. The server activates with the Hub at `https://hub.itsmcloud.lt` and confirms the licence
+every 4 minutes, so it needs outbound HTTPS to it, through the same proxy settings as the tenant
+([Reaching Ivanti](#reaching-ivanti)). Unlicensed, it starts and refuses every tool, each refusal
+saying why. Where to keep the install ID and the last confirmed licence, shape by shape, is in
+[`deployment.md`](./deployment.md#licensing).
+
 ## Reaching Ivanti
 
 **Over https.** `IVANTI_BASE_URL` and `IVANTI_CONFIG_URL` carry an API key with every request;
@@ -600,6 +610,14 @@ tool list before the change will be refused until it reconnects, because the arg
 | `Access token was signed by an unknown key` | JWKS problem, or the issuer is not who you configured. |
 | `Could not discover authorization server metadata` | Wrong `OAUTH_ISSUER`, or the IdP publishes metadata somewhere the spec's probe order does not look — set `OAUTH_JWKS_URI` to skip discovery. |
 | Startup exits `78` | Incomplete configuration. Every problem is listed; fix them all. |
+| `LICENSE_KEY (or LICENSE_KEY_FILE) is required`, exit `78` | Every installation needs its Synergy Hub licence key. Under the chart, the Secret needs the key `licence-key`. Upgrading from 0.3.x, add it first. |
+| `LICENSE_INSTALL_ID (or LICENSE_INSTALL_ID_FILE) is required over HTTP`, exit `78` | Over HTTP the server cannot keep an identity of its own, and a new one every start would take a new seat every start. Generate one once (`node -e "console.log(crypto.randomUUID())"`) and keep it with the other settings. The chart derives one itself. |
+| `LICENSE_INSTALL_ID is not set, and none could be kept in …`, exit `78` | Under stdio, the server generates its install ID into `LICENSE_STATE_DIR` or the config folder, and could write neither — typically `docker run -i` with a read-only root. Mount a volume at `LICENSE_STATE_DIR`, or set `LICENSE_INSTALL_ID`. |
+| Every tool answers *"This server is not licensed, so it cannot run …"* | The licence is not confirmed; the rest of the sentence is the reason, and the log line `licence: not licensed` carries it too. `does not recognise the licence key`: check `LICENSE_KEY`. `every seat of this licence is in use`: a seat is taken by another installation, or by this one under an earlier install ID — free it in the Hub. `Could not reach the Synergy Hub …`: outbound HTTPS to `hub.itsmcloud.lt`, or the proxy. |
+| `licence: the Synergy Hub cannot be reached; running on grace` at **warn** | Nothing is refused yet. The server keeps working on the last confirmed licence until `graceEndsAt`, 30 days from when the Hub last signed it. Restore the route to the Hub before then. |
+| `licence: no LICENSE_STATE_DIR; the 30 days … last only while this process runs` at **warn** | HTTP outside Kubernetes with nowhere to keep the licence: a restart during a Hub outage would start unlicensed. Set `LICENSE_STATE_DIR` to a writable folder (a volume, in a container). |
+| `LICENSE_STATE_SECRET is set but no Kubernetes service-account token is mounted` at **warn** | The chart turns the pod's token on with `license.keepState`; something (a policy, a mutating webhook, a hand-written manifest) turned it off. Offline restart is off until it is mounted. |
+| Each `docker run -i` takes another licence seat | A fresh container each time, with nowhere to keep the generated install ID. Mount `-v ivanti-mcp-licence:/var/lib/ivanti-mcp` with `LICENSE_STATE_DIR=/var/lib/ivanti-mcp`, or set `LICENSE_INSTALL_ID`. |
 | `… is set, but MCP_MODE is full` | An `ENDUSER_*` setting in a `full` deployment, which would ignore it. Set `MCP_MODE=enduser` if the deployment is for employees; otherwise remove the setting. |
 | `… must use https://` | A URL that carries a key or decides which tokens are trusted was given as `http://`. Only a loopback host may use plain http. |
 | `BEARER_TOKEN is N characters` | Under 32. Generate one with `openssl rand -base64 32`. |

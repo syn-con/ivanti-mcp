@@ -4,6 +4,7 @@
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import type { IdentityProvenance } from '../auth/identity.js';
 import { readSdkVersion } from '../version.js';
+import type { LicenceCheck } from './call/licence-gate.js';
 import { jsonResult } from './shared/result.js';
 import { defineTool, type ToolDefinition } from './tool-definition.js';
 
@@ -18,6 +19,17 @@ export interface VersionInfo {
    * tool that reported *who* would be an identity oracle for anyone who can call it.
    */
   caller: IdentityProvenance;
+  /**
+   * The licence check (design §9f). The one tool that still answers unlicensed, so this is where a
+   * model — and through it the user — learns why every other tool is refused.
+   */
+  licence?: {
+    status: 'open' | 'grace' | 'closed';
+    reason?: string;
+    validUntil?: string;
+    /** While in grace: when the server stops answering unless the Synergy Hub is reached first. */
+    graceEndsAt?: string;
+  };
 }
 
 export interface GetVersionDeps {
@@ -26,6 +38,7 @@ export interface GetVersionDeps {
   /** Injected so the versions can be asserted in tests. */
   protocolVersion?: string;
   sdkVersion?: string;
+  licence?: LicenceCheck;
 }
 
 export function buildVersionInfo(
@@ -38,6 +51,17 @@ export function buildVersionInfo(
     protocolVersion: deps.protocolVersion ?? LATEST_PROTOCOL_VERSION,
     sdkVersion: deps.sdkVersion ?? readSdkVersion(),
     caller,
+    ...(deps.licence === undefined ? {} : { licence: licenceInfo(deps.licence) }),
+  };
+}
+
+function licenceInfo(licence: LicenceCheck): NonNullable<VersionInfo['licence']> {
+  const view = licence.view();
+  return {
+    status: view.status,
+    ...(view.reason === undefined ? {} : { reason: view.reason }),
+    ...(view.validUntil === undefined ? {} : { validUntil: view.validUntil }),
+    ...(view.graceEndsAt === undefined ? {} : { graceEndsAt: new Date(view.graceEndsAt).toISOString() }),
   };
 }
 

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-SYNERGY-Commercial
 // Copyright (c) 2026 SYNERGY. All rights reserved.
 
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { ANONYMOUS } from './auth/identity.js';
 import { createOAuthSetup } from './auth/oauth/create-verifier.js';
 import type { TokenVerifier } from './auth/oauth/verify-token.js';
@@ -24,6 +27,8 @@ import { classifyStartupFailure, closeStarted, EXIT_CONFIG } from './server/star
 import { registry as metricsRegistry, watchServer } from './metrics/server-metrics.js';
 import { observeIvantiRequests } from './observe-ivanti.js';
 import { startMetrics, type MetricsServer } from './server/start-metrics.js';
+import { setUpLicensing } from './licensing/setup.js';
+import type { KubernetesAccess } from './licensing/state-store.js';
 
 /**
  * How long a graceful shutdown gets before the process exits regardless.
@@ -33,6 +38,36 @@ import { startMetrics, type MetricsServer } from './server/start-metrics.js';
  * anyway, and exiting on our own terms at least logs why.
  */
 const SHUTDOWN_GRACE_MS = 8_000;
+
+/** This user's config folder for the server: where stdio keeps its licence install ID. */
+function configDir(): string {
+  const base =
+    process.platform === 'win32'
+      ? (process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'))
+      : (process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'));
+  return join(base, 'ivanti-mcp');
+}
+
+const SERVICE_ACCOUNT = '/var/run/secrets/kubernetes.io/serviceaccount';
+
+/** The pod's own way to the Kubernetes API, when it runs in one with its token mounted. */
+function kubernetesAccess(): KubernetesAccess | undefined {
+  const host = process.env.KUBERNETES_SERVICE_HOST;
+  if (host === undefined) return undefined;
+  try {
+    const read = (name: string): string => readFileSync(join(SERVICE_ACCOUNT, name), 'utf8').trim();
+    read('token');
+    return {
+      host,
+      port: Number(process.env.KUBERNETES_SERVICE_PORT ?? '443'),
+      namespace: read('namespace'),
+      ca: read('ca.crt'),
+      token: () => read('token'),
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 async function main(): Promise<void> {
   observeIvantiRequests();
@@ -50,6 +85,14 @@ async function main(): Promise<void> {
     logger.error('uncaught exception', { error });
     process.exit(1);
   });
+
+  // First, and never awaited: the Hub is asked while the tenant is probed, and an unreachable Hub
+  // is a licence state rather than a reason not to start (design §9f).
+  const { state: licence, licensing } = setUpLicensing(
+    config,
+    { configDir: configDir(), kubernetes: kubernetesAccess },
+    logger,
+  );
 
   // Probed before either transport starts. Which base path a tenant uses is not configuration,
   // it is a fact about the tenant — and a tenant that cannot be reached at all is a startup
@@ -99,6 +142,7 @@ async function main(): Promise<void> {
   // because `connect()` binds one transport at a time.
   const factory = createServerFactory(config, {
     logger,
+    licence,
     ...(ivanti === undefined ? {} : { ivanti }),
   });
 
@@ -184,10 +228,12 @@ async function main(): Promise<void> {
       ...(probe === undefined ? {} : { ready: (): boolean => probe.state().ready }),
       ...(ivanti?.limiter === undefined ? {} : { limiter: ivanti.limiter }),
       ...(live === undefined ? {} : { sessions: (): number => live.sessionCount() }),
+      licence: () => licence.view(),
     });
     metrics = await startMetrics(config, logger, metricsRegistry);
   }
   } catch (error: unknown) {
+    licensing.stop();
     readiness?.stop();
     await closeStarted([stdio, http, metrics], logger);
     throw error;
@@ -198,6 +244,7 @@ async function main(): Promise<void> {
     if (stopping) return;
     stopping = true;
     logger.info('shutting down', { reason });
+    licensing.stop();
     readiness?.stop();
 
     const deadline = setTimeout(() => {

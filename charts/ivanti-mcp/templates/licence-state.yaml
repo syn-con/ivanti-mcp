@@ -1,0 +1,40 @@
+{{- if .Values.license.keepState }}
+# The last licence token the Synergy Hub signed for this installation (design §9f), so a
+# pod restarted while the Hub is unreachable opens on its 30 days of grace instead of
+# refusing every tool. The server writes it; the chart only creates it, empty, and never
+# names its data — so `helm upgrade` and an Argo CD sync leave what the server wrote alone.
+# The token is signed and bound to this installation: it is no use to anyone else.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "ivanti-mcp.licenceStateName" . }}
+  labels: {{- include "ivanti-mcp.labels" . | nindent 4 }}
+type: Opaque
+---
+# Exactly that one Secret, read and replaced. Not list, not watch, not create: the
+# server reaches nothing else in the cluster.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "ivanti-mcp.licenceStateName" . }}
+  labels: {{- include "ivanti-mcp.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [{{ include "ivanti-mcp.licenceStateName" . }}]
+    verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "ivanti-mcp.licenceStateName" . }}
+  labels: {{- include "ivanti-mcp.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "ivanti-mcp.licenceStateName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ivanti-mcp.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

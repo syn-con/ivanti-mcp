@@ -116,6 +116,13 @@ release signs with cosign 3, which writes a Sigstore bundle as an OCI 1.1 referr
 older releases still verify; 2.6 needs `--new-bundle-format` for new ones, and 2.5 cannot verify
 them at all ("bundle support for image signatures is not yet implemented").
 
+**`--set-string key=false` is true to Helm's `if`.** It passes the string `"false"`, which is
+non-empty and therefore truthy, so `license.keepState=false` still rendered the licence-state
+Secret and its Role. The rendered `automountServiceAccountToken: false` looked right, because
+it prints the value instead of testing it. `scripts/check-chart.mjs` sends `set` through
+`--set-string`, so a boolean case belongs in `setRaw` (`--set`). → A user setting it through
+`--set-string`, or quoting it in a values file, gets the same result.
+
 ## Toolchain
 
 **TypeScript is pinned to 6.x deliberately.**
@@ -1540,6 +1547,63 @@ by — `par-<RecId>`) and `strExistingRecId` (the stored answer's id on an exist
 differ. Reading the second as the first made every RecId-keyed answer "unknown" to the evaluator
 and, once `submit_service_request` started checking keys against the form, would have refused every
 valid submit. Found by driving it live; the HAR-derived fixture only had the second.
+
+## Licensing (Synergy Hub)
+
+**The Hub's error code is the ProblemDetails `title`, not `detail`.**
+`license_suspended`, `no_seat`, `revoked` and the rest arrive as `title`; `detail` is prose that may
+change. Several codes share a status (403 carries five of them), so switching on the status
+alone cannot tell a suspension, which clears by itself, from a revoked key, which does not.
+*(From the Hub's `docs/contracts/license-process.json`, 2026-11-04.)*
+
+**`revoked` from a heartbeat does not always mean the key is revoked.**
+An admin deactivating the activation in the Hub answers the same code. A fresh activate takes a
+seat again if one is free — the Hub's own code calls this intended — so the client tries activate
+once before treating the licence as gone.
+
+**Helm's `lookup` returns nothing under `helm template`, `--dry-run` and Argo CD.**
+A generated install ID kept in a Secret and found again through `lookup` would therefore change on
+every such render — a new licence seat every Argo CD sync. So the chart never generates one: it
+uses `license.installId` when given, and otherwise derives a UUID from the namespace and release
+name, which is the same on every render.
+
+**Unlicensed, `get_version` cannot always answer either.**
+The licence gate lets `get_version` through, but where a tenant is configured the identity gate
+still holds it until `act_as` — which the licence gate refuses. So every licence refusal carries
+the reason in its own text; never write a refusal that sends the model to `get_version`.
+
+**`docker run -i` under stdio takes a new seat on every run without `LICENSE_INSTALL_ID`.**
+Under stdio the install ID is generated into the config folder, and a fresh container's config
+folder is new every time. A read-only one fails at startup with a message saying to set it; a
+writable one succeeds, silently, once per run. Set `LICENSE_INSTALL_ID` in any container.
+
+**The fake Hub signs with real crypto, which settles outside vitest's fake clock.**
+Advancing the timers returns before an attempt has verified its token, so a test reads the state
+too early. `heartbeat.test.ts` steps the clock and waits on `whenIdle()` between steps.
+
+**`https://hub.itsmcloud.lt` served a `*.synergy.eu` certificate (checked 2026-11-04).**
+Node refuses it, so every server starts unlicensed until the certificate covers the hostname.
+Never work around it by turning certificate checks off.
+
+**Never give the chart's `licence-state` Secret a `data:` or `stringData:` block.**
+The server writes that Secret, and the chart only creates it. `helm upgrade` patches only what the
+chart's manifest names, and an Argo CD sync compares only those fields too. So the data the server
+wrote survives because the manifest never mentions it. An empty `data: {}` in the template would
+wipe the kept licence on every upgrade, and a restart during a Hub outage would then start
+unlicensed. An Argo CD application with `Replace=true` replaces the whole object and wipes it
+anyway.
+
+**A Docker named volume takes the image folder's owner; a bind mount does not.**
+The image owns `/var/lib/ivanti-mcp` as uid 65532, so `-v ivanti-mcp-licence:/var/lib/ivanti-mcp`
+is writable on first use. `-v "$PWD/state:/var/lib/ivanti-mcp"` keeps the host folder's owner, and
+the server can't write the licence there, as with the secrets: `chown 65532:65532` it.
+
+**The Handbook names a secret file in two places, and both must change together.**
+`buildEnvText` writes `LICENSE_KEY_FILE=…/licence-key`, and each shape's steps write the file: the
+Linux, Docker and Kubernetes steps in the page, the Windows script, compose's `secrets:`, and the
+Helm command's `fromFiles`. Step 3 changed only the first. Every generated setup then pointed at a
+file nothing created, and exited 78. `handbook:check` compares settings, not files, and could not
+catch it.
 
 ## Observability
 

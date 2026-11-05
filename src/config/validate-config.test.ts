@@ -614,3 +614,38 @@ describe('numeric bounds', () => {
     }
   });
 });
+
+describe('licence settings (design §9f)', () => {
+  const licenceProblems = (overrides: Partial<Config>) =>
+    validateConfig(config(overrides)).filter((problem) => problem.includes('LICENSE_'));
+  const http = { HTTP_TRANSPORT_ON: true, AUTH_MODE: 'none', MCP_PUBLIC_URL: 'http://127.0.0.1:3000/mcp' } as const;
+
+  it('accepts the fixture: a key and an install ID', () => {
+    expect(licenceProblems({})).toEqual([]);
+  });
+
+  it('refuses a missing licence key, in every transport', () => {
+    expect(licenceProblems({ LICENSE_KEY: undefined })).toEqual([
+      expect.stringMatching(/^LICENSE_KEY \(or LICENSE_KEY_FILE\) is required/),
+    ]);
+    expect(licenceProblems({ ...http, LICENSE_KEY: undefined })).toEqual([
+      expect.stringMatching(/^LICENSE_KEY \(or LICENSE_KEY_FILE\) is required/),
+    ]);
+  });
+
+  it('lets stdio go without an install ID, which it generates itself', () => {
+    expect(licenceProblems({ LICENSE_INSTALL_ID: undefined })).toEqual([]);
+  });
+
+  it('refuses HTTP without an install ID, since every start would take a new seat', () => {
+    expect(licenceProblems({ ...http, LICENSE_INSTALL_ID: undefined })).toEqual([
+      expect.stringMatching(/^LICENSE_INSTALL_ID \(or LICENSE_INSTALL_ID_FILE\) is required over HTTP/),
+    ]);
+  });
+
+  it('refuses keeping the token in two places', () => {
+    expect(
+      licenceProblems({ LICENSE_STATE_DIR: '/var/lib/ivanti-mcp', LICENSE_STATE_SECRET: 'licence-state' }),
+    ).toEqual([expect.stringMatching(/^LICENSE_STATE_DIR and LICENSE_STATE_SECRET are both set/)]);
+  });
+});

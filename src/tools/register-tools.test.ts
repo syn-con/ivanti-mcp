@@ -18,6 +18,7 @@ import { impersonatedSessionFixture } from '../ivanti/session/impersonated-sessi
 import { sample } from '../metrics/sample.fixture.js';
 import { registerTools, selectTools } from './register-tools.js';
 import type { ToolDefinition } from './tool-definition.js';
+import type { LicenceCheck } from './call/licence-gate.js';
 
 const logger = (): Logger => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() });
 
@@ -375,6 +376,7 @@ function serve(
     impersonation?: ImpersonationSlot;
     identity?: CallerIdentity;
     logger?: Logger;
+    licence?: LicenceCheck;
   } = {},
 ) {
   const registerTool = vi.fn();
@@ -387,6 +389,9 @@ function serve(
     },
     options.logger ?? logger(),
     options.idleMs,
+    undefined,
+    undefined,
+    options.licence,
   );
 
   const call = async (name: string, args: Record<string, unknown> = {}): Promise<Result> => {
@@ -406,6 +411,7 @@ function tenant(
     identity?: CallerIdentity;
     logger?: Logger;
     responses?: Record<string, unknown>;
+    licence?: LicenceCheck;
   } = {},
 ) {
   const { connection } = connectionFixture({
@@ -421,6 +427,46 @@ const SIGNED_IN = verifiedIdentity({
   issuer: 'https://idp',
   scopes: [],
   claims: { email: 'HSanders@example.com', email_verified: true },
+});
+
+/** A licence check stuck in one state. */
+const licenceIn = (status: 'open' | 'grace' | 'closed', reason = 'the licence key has been revoked in the Synergy Hub'): LicenceCheck => ({
+  view: () => (status === 'open' ? { status } : { status, reason }),
+});
+
+describe('the licence gate', () => {
+  it('refuses every tool, act_as included, while the licence is closed, and says why', async () => {
+    const { call, names } = tenant({ licence: licenceIn('closed') });
+
+    for (const name of names.filter((tool) => tool !== 'get_version')) {
+      const result = await call(name, name === 'act_as' ? { person: 'HSanders' } : {});
+      // Refused before the identity gate and before the handler: nothing reached Ivanti.
+      expect(result.isError, name).toBe(true);
+      expect(result.content[0]?.text, name).toContain('not licensed');
+      expect(result.content[0]?.text, name).toContain('revoked in the Synergy Hub');
+    }
+  });
+
+  it('lets get_version through, so a server with no tenant can still say why', async () => {
+    const { call } = serve(selectTools(config(), context), { licence: licenceIn('closed') });
+
+    expect((await call('get_version')).isError).toBeUndefined();
+  });
+
+  it('admits calls while the Hub is merely unreachable', async () => {
+    const { call } = tenant({ licence: licenceIn('grace', 'Could not reach the Synergy Hub') });
+
+    expect((await call('act_as', { person: 'HSanders' })).isError).toBeUndefined();
+  });
+
+  it('reads the licence on every call, so a renewal reopens it without a restart', async () => {
+    let status: 'open' | 'closed' = 'closed';
+    const { call } = tenant({ licence: { view: () => (status === 'open' ? { status } : { status, reason: 'suspended' }) } });
+
+    expect((await call('act_as', { person: 'HSanders' })).isError).toBe(true);
+    status = 'open';
+    expect((await call('act_as', { person: 'HSanders' })).isError).toBeUndefined();
+  });
 });
 
 /**

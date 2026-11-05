@@ -4,6 +4,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Config } from '../config/env-schema.js';
 import type { IvantiConnection } from '../ivanti/connect.js';
+import type { LicenceCheck } from '../tools/call/licence-gate.js';
 import type { Logger } from '../logger.js';
 import {
   createImpersonationSlot,
@@ -67,6 +68,8 @@ export interface ServerFactory {
  */
 export interface ServerFactoryDeps {
   logger: Logger;
+  /** The licence check (design §9f). Absent only in tests, where every call is licensed. */
+  licence?: LicenceCheck;
   /** Absent when no tenant is configured. */
   ivanti?: IvantiConnection;
 }
@@ -146,6 +149,7 @@ export function createServerFactory(config: Config, deps: ServerFactoryDeps): Se
     serverVersion: SERVER_VERSION,
     logger: deps.logger,
     ...(deps.ivanti === undefined ? {} : { ivanti: deps.ivanti }),
+    ...(deps.licence === undefined ? {} : { licence: deps.licence }),
   };
 
   const tools = selectTools(config, toolContext);
@@ -216,6 +220,7 @@ export function createServerFactory(config: Config, deps: ServerFactoryDeps): Se
         config.MCP_IDENTITY_IDLE_TTL_SECONDS * 1000,
         manifestFor(context),
         config.MCP_MAX_CALLS_PER_MINUTE,
+        deps.licence,
       );
       endOnInitialize(server, endConversation);
       registerResources(server, resources, mayAnswer, deps.logger);

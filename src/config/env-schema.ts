@@ -274,6 +274,25 @@ export const envSchema = z.object({
   METRICS_PORT: z.coerce.number().int().positive().max(65535).optional(),
   /** Optional. A scrape-only secret, which must not be any credential that reaches the tools. */
   METRICS_TOKEN: z.string().min(1).optional(),
+
+  /**
+   * The customer's Synergy Hub licence key (design §9f). Optional here only so the shape can be
+   * parsed; `validateConfig` refuses a missing one. Also accepted as LICENSE_KEY_FILE. Sent only
+   * in the `X-License-Key` header, never logged.
+   */
+  LICENSE_KEY: z.string().min(1).optional(),
+  /**
+   * This installation's identity to the Hub: generated once and never changed, or the Hub sees a
+   * new machine and the installation takes a new seat. Required over HTTP; under stdio it is
+   * generated into the config folder when absent. Also accepted as LICENSE_INSTALL_ID_FILE.
+   */
+  LICENSE_INSTALL_ID: z.uuid().optional(),
+  /** The chart passes the release namespace's UID here; absent, it is derived from the install ID. */
+  LICENSE_MACHINE_ID: z.uuid().optional(),
+  /** Where Docker and stdio keep the last verified token, for restarting while the Hub is away. */
+  LICENSE_STATE_DIR: z.string().min(1).optional(),
+  /** Under the chart: the Secret, in the pod's own namespace, that keeps the last verified token. */
+  LICENSE_STATE_SECRET: z.string().min(1).optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;
