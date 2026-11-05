@@ -385,7 +385,7 @@ footer { border-top:1px solid var(--line); margin-top:8px; padding-top:20px; fon
 }
 </style>
 <style>
-/* Standalone shell. The artifact host supplies these; a file opened from disk
+/* Page shell. The artifact host supplies these; a file opened from disk
    does not, so they are stated here rather than inherited. */
 html { color-scheme: light dark; }
 body { margin: 0; }
@@ -436,7 +436,8 @@ img  { max-width: 100%; }
   <main>
     <div class="hero">
       <h1>Ivanti MCP Handbook</h1>
-      <p class="lede">A standalone MCP server that gives a model the Ivanti Neurons for ITSM surface — reading records, filing tickets, running the tenant's own quick actions, handling approvals — over stdio, or over HTTP with no authentication, a bearer token or OAuth.</p>
+      <p class="lede">An MCP server that gives a model the Ivanti Neurons for ITSM surface — reading records, filing tickets, running the tenant's own quick actions, handling approvals — over stdio, or over HTTP with no authentication, a bearer token or OAuth.</p>
+      <p><a href="https://github.com/syn-con/ivanti-mcp">Source repository</a> · <a href="https://github.com/syn-con/ivanti-mcp/releases">Releases</a> · <a href="https://syn-con.github.io/ivanti-mcp/">Published handbook</a></p>
       <div class="statline">
         <div><svg class="ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1.1"/><rect x="9" y="2.4" width="4.6" height="4.6" rx="1.1"/><rect x="2.4" y="9" width="4.6" height="4.6" rx="1.1"/><rect x="9" y="9" width="4.6" height="4.6" rx="1.1"/></svg><div class="k" id="statTools">41</div><div class="v">tools · full</div></div>
         <div><svg class="ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="5.4" r="2.7"/><path d="M2.9 13.4c0-2.6 2.3-4.2 5.1-4.2s5.1 1.6 5.1 4.2"/></svg><div class="k" id="statEnd">34</div><div class="v">tools · enduser</div></div>
@@ -500,7 +501,7 @@ docker run --rm -p 127.0.0.1:3000:3000 --env-file .env \
     <section id="deploy">
       <span class="eyebrow">03 — Deploy</span>
       <h2>Four shapes, one build</h2>
-      <p class="lede">A tagged release publishes a multi-arch image, a Helm chart and a self-contained tarball from the same commit — so whichever shape you pick, it is the same code, and the version it reports is the version you tagged.</p>
+      <p class="lede">The Release workflow publishes a multi-arch image, a Helm chart and a self-contained tarball from the same commit, then creates the release tag from the version in <code>package.json</code> — so whichever shape you pick, it is the same code and version.</p>
 
       <div class="tablewrap">
         <table>
@@ -509,7 +510,7 @@ docker run --rm -p 127.0.0.1:3000:3000 --env-file .env \
             <tr><td><b>Linux host</b></td><td>a systemd service</td><td>stdio or HTTP</td><td class="mono">the release tarball<span class="sub">Node 22 and nothing else — no compiler, no package manager, no registry</span></td></tr>
             <tr><td><b>Windows host</b></td><td>a Windows service, run by WinSW</td><td>stdio or HTTP</td><td class="mono">the same tarball<span class="sub">Node 22 or later, plus WinSW to run it as a service</span></td></tr>
             <tr><td><b>Container</b></td><td><code>docker run</code> or compose</td><td>either</td><td class="mono">tyrunas/ivanti-mcp<span class="sub">multi-arch, distroless, signed</span></td></tr>
-            <tr><td><b>Kubernetes</b></td><td>a Deployment</td><td>HTTP only</td><td class="mono">oci://ghcr.io/tyrunasj/charts/ivanti-mcp<span class="sub">a Helm chart over that same image</span></td></tr>
+            <tr><td><b>Kubernetes</b></td><td>a Deployment</td><td>HTTP only</td><td class="mono"><span class="chart-now">oci://ghcr.io/tyrunasj/charts/ivanti-mcp</span><span class="sub">a Helm chart over that same image</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -527,7 +528,7 @@ docker run --rm -p 127.0.0.1:3000:3000 --env-file .env \
         <li><b>Configurator:</b> pick <b>Linux</b>, then download <code>.env</code> and <code>ivanti-mcp.service</code> into the folder.</li>
         <li><b>Edit <code>.env</code>:</b> set <code>IVANTI_BASE_URL</code> to your tenant, and — for HTTP — <code>MCP_PUBLIC_URL</code> and <code>TRUSTED_ORIGINS</code>.</li>
         <li><b>Install the release</b>, from the folder:
-          <div class="codewrap"><pre><code>curl -fsSLO https://github.com/tyrunasj/ivanti-mcp-standalone/releases/download/v<span class="ver-now">0.3.1</span>/ivanti-mcp-<span class="ver-now">0.3.1</span>.tar.gz
+          <div class="codewrap"><pre><code>curl -fsSLO https://github.com/syn-con/ivanti-mcp/releases/download/v<span class="ver-now">0.3.1</span>/ivanti-mcp-<span class="ver-now">0.3.1</span>.tar.gz
 sudo useradd --system --home /opt/ivanti-mcp --shell /usr/sbin/nologin ivanti-mcp
 sudo install -d -o ivanti-mcp -g ivanti-mcp /opt/ivanti-mcp
 sudo tar xzf ivanti-mcp-<span class="ver-now">0.3.1</span>.tar.gz --strip-components=1 -C /opt/ivanti-mcp</code></pre></div></li>
@@ -567,14 +568,12 @@ sudo chown 65532:65532 secrets/* &amp;&amp; sudo chmod 600 secrets/*</code></pre
 docker compose logs --tail 20           <span class="cmt"># the startup lines list every tool the key reaches</span>
 curl -s http://127.0.0.1:3000/health    <span class="cmt"># {"status":"ok"} — HTTP only</span></code></pre></div></li>
       </ol>
-      <p>The image is multi-arch (<code>linux/amd64</code>, <code>linux/arm64</code>), about 55&nbsp;MB to pull, distroless — no shell, no package manager — and runs as uid 65532. Final releases are tagged <code>1.2.3</code>, <code>1.2</code>, <code>1</code> and <code>latest</code>; pin a digest in production. To verify the signature before running it:</p>
-      <div class="codewrap"><pre><code>cosign verify tyrunas/ivanti-mcp:<span class="ver-now">0.3.1</span> \
-  --certificate-identity='https://github.com/tyrunasj/ivanti-mcp-standalone/.github/workflows/release.yml@refs/heads/main' \
-  --certificate-oidc-issuer=https://token.actions.githubusercontent.com</code></pre></div>
-      <p>It needs cosign 3, or cosign 2.6 with <code>--new-bundle-format</code> added.</p>
+      <p>The image is multi-arch (<code>linux/amd64</code>, <code>linux/arm64</code>), about 55&nbsp;MB to pull, distroless — no shell, no package manager — and runs as uid 65532. Final releases are tagged <code>1.2.3</code>, <code>1.2</code>, <code>1</code> and <code>latest</code>; pin a digest in production. Before running it, copy the exact <code>cosign verify</code> command from the <a class="release-notes-link" href="https://github.com/syn-con/ivanti-mcp/releases/tag/v0.3.9">v<span class="ver-now">0.3.9</span> release notes</a>. Use cosign 3, or cosign 2.6 with <code>--new-bundle-format</code> added.</p>
+      <p>Versions through <code>0.3.9</code> retain their original signing identity. Releases published after the transfer use <code>https://github.com/syn-con/ivanti-mcp/.github/workflows/release.yml@refs/heads/main</code>. The identity must match the version being verified; renaming the repository does not change an existing signature.</p>
 
       <h3>C. Kubernetes</h3>
       <p>A Helm chart over the same image. It is HTTP-only and runs one replica.</p>
+      <p>New releases publish to <code>oci://ghcr.io/syn-con/charts/ivanti-mcp</code>. Versions through <code>0.3.9</code> remain at <code>oci://ghcr.io/tyrunasj/charts/ivanti-mcp</code>; the configurator uses that existing package for <code>0.3.9</code>. After the first release under <code>syn-con</code>, the package owner must make the new chart package public for installation without a registry login. Docker images continue to use <code>tyrunas/ivanti-mcp</code>.</p>
       <ol class="steps">
         <li><b>Configurator:</b> pick <b>Kubernetes</b>, then download <code>values.yaml</code> and <code>helm-install.sh</code> into the folder.</li>
         <li><b>Edit <code>values.yaml</code>:</b> <code>server.publicUrl</code>, <code>server.trustedOrigins</code>, <code>ivanti.baseUrl</code>, and the ingress host if you publish it.</li>
@@ -687,7 +686,7 @@ Get-Content "$env:ProgramData\ivanti-mcp\secrets\metrics-token"  <span class="cm
         <li><strong>Impersonation for per-person access</strong>, with <code>IVANTI_IMPERSONATION_REQUIRED=true</code> where the promise is that Ivanti scopes every answer.</li>
         <li><strong>Metrics off on anything internet-facing</strong> — <code>METRICS_ON=false</code>, the default — unless something private scrapes them. When on: loopback or a NetworkPolicy, plus <code>METRICS_TOKEN</code>, and <b>never route the metrics port through the ingress or proxy</b> in front of MCP.</li>
         <li><strong>The exact origins</strong> in <code>TRUSTED_ORIGINS</code>, and <code>LOG_LEVEL=info</code> in production — <code>debug</code> logs every query, which is personal data.</li>
-        <li><strong>Pin the image by digest and verify it</strong> with the <code>cosign</code> command above. Every image is scanned before it is published and refused on a critical or high finding that has a fix; each carries an SBOM and build provenance: <code>docker buildx imagetools inspect tyrunas/ivanti-mcp:<span class="ver-now">0.3.1</span> --format '{{ json .SBOM }}'</code>.</li>
+        <li><strong>Pin the image by digest and verify it</strong> with the exact <code>cosign</code> command in the release notes linked above. Every image is scanned before it is published and refused on a critical or high finding that has a fix; each carries an SBOM and build provenance: <code>docker buildx imagetools inspect tyrunas/ivanti-mcp:<span class="ver-now">0.3.1</span> --format '{{ json .SBOM }}'</code>.</li>
       </ul>
 
       <h3>Watching it</h3>
@@ -1290,6 +1289,9 @@ const HOST_PIN = "your-tenant.example.com:203.0.113.10";
 // `pnpm version:check` fails CI when it drifts.
 const VERSION = "0.3.9";
 const IMAGE = "tyrunas/ivanti-mcp:" + VERSION;
+// The current 0.3.9 chart was published before the transfer. The next version:sync
+// switches generated commands to the organization's release namespace.
+const CHART = "oci://ghcr.io/" + (VERSION === "0.3.9" ? "tyrunasj" : "syn-con") + "/charts/ivanti-mcp";
 // The server refuses a bearer token under 32 characters, and a placeholder long enough
 // to pass would be one shared, published secret. So the page makes a fresh one per
 // view, in the browser; nothing sends it anywhere.
@@ -1515,7 +1517,7 @@ const PIN_HOST = HOST_PIN.split(":")[0];
 const PIN_IP = HOST_PIN.split(":")[1];
 
 function buildValuesText(s) {
-  const L = ["# helm install ivanti-mcp oci://ghcr.io/tyrunasj/charts/ivanti-mcp \\",
+  const L = ["# helm install ivanti-mcp " + CHART + " \\",
              "#   --version " + VERSION + " --namespace ivanti --create-namespace -f values.yaml",
              "#",
              "# The chart forces STDIO_TRANSPORT_ON=false, HTTP_TRANSPORT_ON=true and",
@@ -1662,7 +1664,6 @@ function fromFiles(s, indent) {
 }
 
 /* ── helm install — the command that applies the values above ─────────── */
-const CHART = "oci://ghcr.io/tyrunasj/charts/ivanti-mcp";
 const CHART_VERSION = VERSION;
 
 function buildHelmText(s) {
@@ -1730,7 +1731,7 @@ function buildHelmText(s) {
 }
 
 /* ── systemd — a service on a Linux host ──────────────────────────────── */
-const UNIT = "# Ivanti MCP as a system service on a plain Node 22 host.\n#\n#   sudo useradd --system --home /opt/ivanti-mcp --shell /usr/sbin/nologin ivanti-mcp\n#   sudo install -d -o ivanti-mcp -g ivanti-mcp /opt/ivanti-mcp /etc/ivanti-mcp\n#   sudo tar xzf ivanti-mcp-<version>.tar.gz --strip-components=1 -C /opt/ivanti-mcp\n#   sudo chown -R ivanti-mcp:ivanti-mcp /opt/ivanti-mcp\n#   sudo install -m 0640 -o root -g ivanti-mcp .env /etc/ivanti-mcp/env\n#   sudo systemctl enable --now ivanti-mcp\n#\n# Rotating a key: replace it where it lives (the env file, or the credential file\n# below), then `sudo systemctl restart ivanti-mcp`. It is read once, at startup.\n#\n# The unit mirrors the container's posture: unprivileged, read-only filesystem,\n# no capabilities, nothing written to disk.\n\n[Unit]\nDescription=Ivanti MCP server\nDocumentation=https://github.com/tyrunasj/ivanti-mcp-standalone\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=ivanti-mcp\nGroup=ivanti-mcp\nWorkingDirectory=/opt/ivanti-mcp\n\n# Configuration lives here, not in the unit: a unit file is world-readable and\n# shows up in `systemctl cat`. Mode 0640 root:ivanti-mcp keeps it out of everyone\n# else's reach.\n#\n# Set STDIO_TRANSPORT_ON=false in it. A service's stdin is /dev/null, so the stdio\n# transport reads EOF at once: beside HTTP that is harmless noise in the journal,\n# and on its own it is a service nothing can talk to.\nEnvironmentFile=/etc/ivanti-mcp/env\n\n# Recommended: the keys as systemd credentials rather than lines in the env file.\n# systemd copies each into a private in-memory directory that only this service\n# can read, whatever the source file's ownership — so the source can stay\n# root:root 0600, and the key never sits in an environment `/proc` can show.\n# When you enable a pair here, remove that secret's lines from the env file —\n# IVANTI_API_KEY or IVANTI_API_KEY_FILE, BEARER_TOKEN or BEARER_TOKEN_FILE: the\n# env file overrides Environment=, and both forms of one secret is exit 78.\n# `%d` is the credentials directory (systemd 248+).\n#LoadCredential=ivanti-api-key:/etc/ivanti-mcp/ivanti-api-key\n#Environment=IVANTI_API_KEY_FILE=%d/ivanti-api-key\n#LoadCredential=bearer-token:/etc/ivanti-mcp/bearer-token\n#Environment=BEARER_TOKEN_FILE=%d/bearer-token\n\nExecStart=/usr/bin/node /opt/ivanti-mcp/dist/index.js\n\nRestart=on-failure\nRestartSec=5s\n# Exit 78 is EX_CONFIG: the configuration is wrong and will be wrong again on the\n# next start, so restarting is just noise in the journal.\nRestartPreventExitStatus=78\n\n# Structured JSON on stderr. stdout carries the JSON-RPC stream under the stdio\n# transport and the application never writes to it.\nStandardOutput=journal\nStandardError=journal\nSyslogIdentifier=ivanti-mcp\n\n# ── Hardening ────────────────────────────────────────────────────────────────\nNoNewPrivileges=yes\nPrivateTmp=yes\nPrivateDevices=yes\nProtectSystem=strict\nProtectHome=yes\nProtectKernelTunables=yes\nProtectKernelModules=yes\nProtectKernelLogs=yes\nProtectControlGroups=yes\nProtectClock=yes\nProtectHostname=yes\nProtectProc=invisible\nRestrictNamespaces=yes\nRestrictRealtime=yes\nRestrictSUIDSGID=yes\nRestrictAddressFamilies=AF_INET AF_INET6\nLockPersonality=yes\nCapabilityBoundingSet=\nAmbientCapabilities=\nSystemCallFilter=@system-service\nSystemCallErrorNumber=EPERM\nUMask=0077\n\n# Deliberately NOT set: MemoryDenyWriteExecute=yes. Node's JIT maps pages\n# writable and then executable, so it refuses to start under that directive —\n# the failure looks like a segfault rather than a policy denial.\n\n# Nothing is written to disk, so ProtectSystem=strict above needs no exception.\n# Add ReadWritePaths only if you later give it somewhere to write.\n\n[Install]\nWantedBy=multi-user.target";
+const UNIT = "# Ivanti MCP as a system service on a plain Node 22 host.\n#\n#   sudo useradd --system --home /opt/ivanti-mcp --shell /usr/sbin/nologin ivanti-mcp\n#   sudo install -d -o ivanti-mcp -g ivanti-mcp /opt/ivanti-mcp /etc/ivanti-mcp\n#   sudo tar xzf ivanti-mcp-<version>.tar.gz --strip-components=1 -C /opt/ivanti-mcp\n#   sudo chown -R ivanti-mcp:ivanti-mcp /opt/ivanti-mcp\n#   sudo install -m 0640 -o root -g ivanti-mcp .env /etc/ivanti-mcp/env\n#   sudo systemctl enable --now ivanti-mcp\n#\n# Rotating a key: replace it where it lives (the env file, or the credential file\n# below), then `sudo systemctl restart ivanti-mcp`. It is read once, at startup.\n#\n# The unit mirrors the container's posture: unprivileged, read-only filesystem,\n# no capabilities, nothing written to disk.\n\n[Unit]\nDescription=Ivanti MCP server\nDocumentation=https://github.com/syn-con/ivanti-mcp\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=ivanti-mcp\nGroup=ivanti-mcp\nWorkingDirectory=/opt/ivanti-mcp\n\n# Configuration lives here, not in the unit: a unit file is world-readable and\n# shows up in `systemctl cat`. Mode 0640 root:ivanti-mcp keeps it out of everyone\n# else's reach.\n#\n# Set STDIO_TRANSPORT_ON=false in it. A service's stdin is /dev/null, so the stdio\n# transport reads EOF at once: beside HTTP that is harmless noise in the journal,\n# and on its own it is a service nothing can talk to.\nEnvironmentFile=/etc/ivanti-mcp/env\n\n# Recommended: the keys as systemd credentials rather than lines in the env file.\n# systemd copies each into a private in-memory directory that only this service\n# can read, whatever the source file's ownership — so the source can stay\n# root:root 0600, and the key never sits in an environment `/proc` can show.\n# When you enable a pair here, remove that secret's lines from the env file —\n# IVANTI_API_KEY or IVANTI_API_KEY_FILE, BEARER_TOKEN or BEARER_TOKEN_FILE: the\n# env file overrides Environment=, and both forms of one secret is exit 78.\n# `%d` is the credentials directory (systemd 248+).\n#LoadCredential=ivanti-api-key:/etc/ivanti-mcp/ivanti-api-key\n#Environment=IVANTI_API_KEY_FILE=%d/ivanti-api-key\n#LoadCredential=bearer-token:/etc/ivanti-mcp/bearer-token\n#Environment=BEARER_TOKEN_FILE=%d/bearer-token\n\nExecStart=/usr/bin/node /opt/ivanti-mcp/dist/index.js\n\nRestart=on-failure\nRestartSec=5s\n# Exit 78 is EX_CONFIG: the configuration is wrong and will be wrong again on the\n# next start, so restarting is just noise in the journal.\nRestartPreventExitStatus=78\n\n# Structured JSON on stderr. stdout carries the JSON-RPC stream under the stdio\n# transport and the application never writes to it.\nStandardOutput=journal\nStandardError=journal\nSyslogIdentifier=ivanti-mcp\n\n# ── Hardening ────────────────────────────────────────────────────────────────\nNoNewPrivileges=yes\nPrivateTmp=yes\nPrivateDevices=yes\nProtectSystem=strict\nProtectHome=yes\nProtectKernelTunables=yes\nProtectKernelModules=yes\nProtectKernelLogs=yes\nProtectControlGroups=yes\nProtectClock=yes\nProtectHostname=yes\nProtectProc=invisible\nRestrictNamespaces=yes\nRestrictRealtime=yes\nRestrictSUIDSGID=yes\nRestrictAddressFamilies=AF_INET AF_INET6\nLockPersonality=yes\nCapabilityBoundingSet=\nAmbientCapabilities=\nSystemCallFilter=@system-service\nSystemCallErrorNumber=EPERM\nUMask=0077\n\n# Deliberately NOT set: MemoryDenyWriteExecute=yes. Node's JIT maps pages\n# writable and then executable, so it refuses to start under that directive —\n# the failure looks like a segfault rather than a policy denial.\n\n# Nothing is written to disk, so ProtectSystem=strict above needs no exception.\n# Add ReadWritePaths only if you later give it somewhere to write.\n\n[Install]\nWantedBy=multi-user.target";
 function buildUnitText(s) {
   const head = [];
   if (s.transport !== "http")
@@ -1799,8 +1800,8 @@ function buildInstallText(s) {
              "$tgz = \"$env:TEMP\\ivanti-mcp-$v.tar.gz\"",
              "",
              "# 1. The release, checked against the digest GitHub publishes for it",
-             "curl.exe -fsSL -o $tgz \"https://github.com/tyrunasj/ivanti-mcp-standalone/releases/download/v$v/ivanti-mcp-$v.tar.gz\"",
-             "$want = ((Invoke-RestMethod \"https://api.github.com/repos/tyrunasj/ivanti-mcp-standalone/releases/tags/v$v\").assets |",
+             "curl.exe -fsSL -o $tgz \"https://github.com/syn-con/ivanti-mcp/releases/download/v$v/ivanti-mcp-$v.tar.gz\"",
+             "$want = ((Invoke-RestMethod \"https://api.github.com/repos/syn-con/ivanti-mcp/releases/tags/v$v\").assets |",
              "         Where-Object name -eq \"ivanti-mcp-$v.tar.gz\").digest -replace '^sha256:'",
              "if ((Get-FileHash $tgz -Algorithm SHA256).Hash -ne $want) { throw 'The release does not match its published digest.' }",
              "New-Item -ItemType Directory -Force $app | Out-Null",
@@ -2178,6 +2179,10 @@ applyTheme(storedTheme === "light" || storedTheme === "dark" ? storedTheme : "au
 
 document.getElementById("verChip").textContent = "v" + (DATA.server?.version || VERSION);
 document.querySelectorAll(".ver-now").forEach((el) => { el.textContent = VERSION; });
+document.querySelectorAll(".chart-now").forEach((el) => { el.textContent = CHART; });
+document.querySelectorAll(".release-notes-link").forEach((el) => {
+  el.href = "https://github.com/syn-con/ivanti-mcp/releases/tag/v" + VERSION;
+});
 links.forEach((a) => buildSubnav(a.getAttribute("href").slice(1)));
 buildEnv();
 renderEnv();

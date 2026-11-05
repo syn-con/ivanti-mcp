@@ -102,7 +102,7 @@ export class SessionManager<T extends ClosableSession> {
   }
 
   /**
-   * Marks a client attached to this session's standalone stream until the returned function is
+   * Marks a client attached to this session's dedicated SSE stream until the returned function is
    * called. Held for the client's life, so it says the client is present, not that anything is
    * running: eviction still prefers a session with no request in flight, and the cap and the
    * sweep leave an attached one alone.

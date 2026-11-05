@@ -11,6 +11,15 @@ somewhere else.* Each note says what breaks, why, and what to do.
 
 ## Packaging and containers
 
+**A repository transfer does not move existing GHCR charts or rewrite image signatures.**
+The project now lives at [syn-con/ivanti-mcp](https://github.com/syn-con/ivanti-mcp), with its
+handbook at <https://syn-con.github.io/ivanti-mcp/>. Chart versions through 0.3.9 are still published
+under `ghcr.io/tyrunasj/charts/ivanti-mcp`; later releases publish under `ghcr.io/syn-con/charts/ivanti-mcp`.
+The handbook keeps its 0.3.9 generated Helm commands on the existing package; the next
+`version:sync` switches them to `syn-con`. Old images still need the signing identity from their
+original release notes. Changing that identity to the current repository URL makes verification
+fail. The Docker Hub image remains `tyrunas/ivanti-mcp`.
+
 **`.dockerignore` must not exclude `package.json`.**
 The server reads its own name and version from the manifest at startup, so the image has to
 `COPY package.json` alongside `dist/`. A `.dockerignore` that filters it out passes every local

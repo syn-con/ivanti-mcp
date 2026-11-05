@@ -15,7 +15,7 @@
 
 [Unit]
 Description=Ivanti MCP server
-Documentation=https://github.com/tyrunasj/ivanti-mcp-standalone
+Documentation=https://github.com/syn-con/ivanti-mcp
 After=network-online.target
 Wants=network-online.target
 
